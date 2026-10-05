@@ -38,7 +38,7 @@ flowchart TD
 
 1. formulário -> `POST /api/animals` (door 5) - valida, persiste `Animal` com `birth_date_estimated` (door 8) e devolve o animal; o navegador vai para o perfil
 2. perfil (Server Component) lê `Animal` e `AnimalImage` direto do PostgreSQL (door 2) e mostra as três posições
-3. seletor de posição -> câmera: `getUserMedia`, detector rodando a cada quadro (door 9) e distância mínima calculada a partir da categoria, do peso e da posição
+3. seletor de posição -> câmera: `getUserMedia` pedindo 4:3, detector rodando a cada 200 ms sobre o vídeo (door 9) e distância mínima calculada a partir do peso, da posição e do formato do quadro
 4. disparo -> prévia -> `POST /api/animals/{id}/images` (door 5) - sharp gera JPEG e miniatura (door 4), grava os dois no MinIO (door 3), depois a linha `AnimalImage` com os snapshots (door 8)
 5. out: `201` com a imagem; o perfil exibe as miniaturas por `GET /api/images/{id}`, que lê do MinIO
 

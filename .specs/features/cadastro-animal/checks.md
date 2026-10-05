@@ -18,30 +18,39 @@ the `db` and `minio` services of `docker compose`) and `pnpm playwright test <fi
 **C1** - Preencher os cinco campos e tocar "Salvar animal" responde `201` em `POST /api/animals` e abre `/animais/{id}` (AC 1)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "salvar cria o animal e abre o perfil"`
 Proof: `pnpm vitest run tests/integration/api-animals.test.ts -t "POST valido responde 201"`
+Done: yes
 
 **C2** - `/animais/novo` mostra "Novo animal", o botão com o ícone `close` e os blocos na ordem Identificação, Categoria, Idade, Peso, Sexo, Prévia do card (AC 2)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "ordem dos campos"`
+Done: yes
 
 **C3** - Com 0 a 4 campos preenchidos, "Salvar animal" está desabilitado com fundo `#EEF0EF` e texto `#9AA39E`, e o rodapé mostra "X de 5 preenchidos" com o X certo (AC 3)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "contador e botao desabilitado"`
+Done: yes
 
 **C4** - Com os cinco campos, o rodapé mostra "5 de 5 preenchidos" com `check_circle` em `#18864B` e o botão fica habilitado com fundo `#1F6B45` (AC 4)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "cinco de cinco habilita salvar"`
+Done: yes
 
 **C5** - A categoria aparece como os cartões "Taurino" / "Sem cupim" e "Zebu" / "Com cupim"; o escolhido ganha borda `#1F6B45` e um check (AC 5)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "cartoes de categoria"`
+Done: yes
 
 **C6** - O sexo aparece como "Macho" com o ícone `male` e "Fêmea" com o ícone `female` (AC 6)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "botoes de sexo"`
+Done: yes
 
 **C7** - A idade vem com o seletor "Meses" | "Anos", "Meses" marcado por padrão; digitar 24 mostra "24 meses" no campo e "= 2 anos" abaixo (AC 7)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "idade com unidade e conversao"`
+Done: yes
 
 **C8** - O campo de peso mostra a unidade "kg" dentro dele (AC 8)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "peso com kg"`
+Done: yes
 
 **C9** - Com identificação 023, Taurino, 24 meses, 485 kg e Macho, a prévia mostra "Animal #023", "Taurino • Macho" e "24 meses • 485 kg" (AC 9)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "previa do card"`
+Done: yes
 
 **C10** - 24 meses e 2 anos informados em 2026-10-04 dão `birth_date_estimated` = 2024-10-04, e o valor gravado pela API é hoje menos a idade (AC 10)
 Proof: `pnpm vitest run tests/unit/age.test.ts -t "data de nascimento estimada"`
@@ -55,6 +64,7 @@ Done: yes
 **C12** - Peso 29, 1501 e 450,5 são rejeitados com "Confira o peso informado"; 30 e 1500 são aceitos; o formulário não envia com o peso rejeitado (AC 12)
 Proof: `pnpm vitest run tests/unit/animal-validation.test.ts -t "limites de peso"`
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "peso fora da faixa"`
+Done: yes
 
 **C13** - Identificação vazia e com 21 caracteres é rejeitada com "Informe uma identificação de até 20 caracteres"; 1 e 20 caracteres são aceitos (AC 13)
 Proof: `pnpm vitest run tests/unit/animal-validation.test.ts -t "limites da identificacao"`
@@ -62,6 +72,7 @@ Done: yes
 
 **C14** - Com "A12" cadastrado, salvar "a12 " mostra "Já existe um animal com este ID." no campo de identificação e fica em `/animais/novo` (AC 14)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "identificacao duplicada"`
+Done: yes
 
 **C15** - `POST /api/animals` com a identificação de outro animal (diferindo só em maiúsculas e espaços) responde `409` com `fields.externalId` e a contagem de animais não muda (AC 15)
 Proof: `pnpm vitest run tests/integration/api-animals.test.ts -t "identificacao duplicada responde 409"`
@@ -69,12 +80,15 @@ Done: yes
 
 **C16** - Digitar 1501 no peso não mostra erro; sair do campo mostra "Confira o peso informado" com o ícone `error` e texto `#B23E2F` (AC 16)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "erro so ao sair do campo"`
+Done: yes
 
 **C17** - Os campos de idade e peso têm `inputmode="numeric"` (AC 17)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "teclado numerico"`
+Done: yes
 
 **C18** - Offline, com os cinco campos preenchidos, "Salvar animal" fica desabilitado e aparece "Sem internet — conecte-se para salvar." (AC 18)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "offline desabilita salvar"`
+Done: yes
 
 **C19** - Repetir `POST /api/animals` com o mesmo `id` responde `200` com o animal gravado e a contagem continua 1 (AC 19)
 Proof: `pnpm vitest run tests/integration/api-animals.test.ts -t "mesmo id responde 200"`
@@ -92,38 +106,49 @@ Done: yes
 
 **C22** - Abrir `/` termina em `/animais` (AC 21)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "raiz redireciona"`
+Done: yes
 
 **C23** - Com 2 animais, `/animais` mostra "Animais", "2 cadastrados" e "Adicionar animal", que abre `/animais/novo` (AC 22)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "cabecalho da lista"`
+Done: yes
 
 **C24** - Os itens aparecem do mais recente para o mais antigo, cada um com miniatura de 76 px, "Animal #023", "Taurino • Macho", "24 meses • 485 kg" e "Última foto:" (AC 23)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "item e ordem"`
+Done: yes
 
 **C25** - Um animal com 2 fotos mostra o selo "2 FOTOS"; um sem foto mostra "SEM FOTOS" (AC 24)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "selo de fotos"`
+Done: yes
 
 **C26** - Buscar "a1" mostra "A12" e esconde "B7" (AC 25)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "busca por identificacao"`
+Done: yes
 
 **C27** - Com um Taurino macho e uma Zebu fêmea, cada chip mostra exatamente o grupo dele: Todos 2, Taurino 1, Zebu 1, Machos 1, Fêmeas 1 (AC 26)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "chips de filtro"`
+Done: yes
 
 **C28** - Sem animais, `/animais` mostra o ícone `sell`, "Nenhum animal cadastrado" e o botão "Adicionar animal" (AC 27)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "estado vazio"`
+Done: yes
 
 **C29** - Uma busca sem resultado mostra "Nenhum animal encontrado" (AC 28)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "busca sem resultado"`
+Done: yes
 
 ### S3 - Fotografar por posição com guia · 12 files · 64 KB · ~16k
 
 **C30** - Tocar "Fotografar animal" abre a escolha entre "De trás", "De cima" e "Lateral" antes de qualquer `getUserMedia` (AC 29)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "escolhe posicao antes da camera"`
+Done: yes
 
 **C31** - A câmera mostra "Cancelar" no topo à esquerda, o chip de conexão no topo à direita, "Posicione o animal inteiro dentro da área", a moldura, quatro dicas, e o contador, o disparo de 88 px e "Dicas" no terço inferior da tela (AC 30)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "layout da camera"`
+Done: yes
 
 **C32** - A primeira dica é "Fotografe por trás" em De trás, "Fotografe de cima" em De cima e "Fotografe de lado" em Lateral, seguida de "Boa iluminação", "Só um animal" e "Corpo inteiro" (AC 31)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "dicas por posicao"`
+Done: yes
 
 **C33** - Para um quadro 1000 × 750 mostrado em 1000 × 750 px, a moldura vai de (50, 37,5) a (950, 712,5) (AC 32)
 Proof: `pnpm vitest run tests/unit/guide-rect.test.ts -t "moldura recuada 5 por cento"`
@@ -144,6 +169,7 @@ Done: yes
 **C37** - Lateral, 450 kg, 65°, quadro 4:3 horizontal mostra "Distância mínima: 2,1 m" (AC 36)
 Proof: `pnpm vitest run tests/unit/min-distance.test.ts -t "lateral 450 kg horizontal"`
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "mostra distancia minima"`
+Done: yes
 
 **C38** - O mesmo animal com o celular na vertical (quadro 3:4) mostra "Distância mínima: 2,8 m" (AC 37)
 Proof: `pnpm vitest run tests/unit/min-distance.test.ts -t "lateral 450 kg vertical"`
@@ -152,51 +178,66 @@ Done: yes
 **C39** - Uma caixa `cow` com score 0,8 de (10%, 20%) a (90%, 80%) é `FRAMED`, e a tela mostra "Enquadrado" com os cantos em `#7FD1A3` (AC 38)
 Proof: `pnpm vitest run tests/unit/framing.test.ts -t "enquadrado"`
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "estado enquadrado"`
+Done: yes
 
 **C40** - Uma caixa de (2%, 20%) a (90%, 80%) é `OUT_OF_FRAME`, e a tela mostra "Afaste-se — o animal não cabe no quadro" com os cantos em `#E8A93A` (AC 39)
 Proof: `pnpm vitest run tests/unit/framing.test.ts -t "fora do quadro"`
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "estado afaste-se"`
+Done: yes
 
 **C41** - Uma caixa de (30%, 30%) a (70%, 70%) é `TOO_FAR`, e a tela mostra "Aproxime-se" com os cantos em `#E8A93A` (AC 40)
 Proof: `pnpm vitest run tests/unit/framing.test.ts -t "longe demais"`
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "estado aproxime-se"`
+Done: yes
 
 **C42** - Nenhuma caixa, ou uma `cow` com score 0,49, é `NOT_DETECTED`, e a tela mostra "Animal não detectado" com os cantos brancos (AC 41)
 Proof: `pnpm vitest run tests/unit/framing.test.ts -t "nao detectado"`
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "estado nao detectado"`
+Done: yes
 
 **C43** - Enquanto o detector carrega, a câmera mostra "Carregando guia de enquadramento..." e já mostra "Distância mínima: 2,1 m" (AC 42)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "detector carregando"`
+Done: yes
 
 **C44** - Se o detector falha ao carregar, a câmera mostra "Guia de enquadramento indisponível", o disparo continua habilitado e o estado é `UNAVAILABLE` (AC 43)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "detector indisponivel"`
+Done: yes
 
 **C45** - Em cada um dos 5 estados o disparo está habilitado, e o `framing` enviado é o estado do instante do disparo (AC 44)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "disparo em todos os estados"`
+Done: yes
 
 **C46** - Depois do disparo, a revisão mostra a foto com altura entre 60% e 72% da tela, "Esta foto está boa para o dataset?", a posição, o estado de enquadramento, "Usar foto" com fundo `#1F6B45` e "Tirar outra foto" com fundo `#EAF5EF` (AC 45)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "layout da revisao"`
+Done: yes
 
 **C47** - "Tirar outra foto" volta à câmera sem nenhuma requisição a `/api/animals/{id}/images` (AC 46)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "tirar outra descarta"`
+Done: yes
 
 **C48** - Duas vezes "Usar foto" na Lateral fazem dois `POST` com `position=SIDE`, voltam à câmera na Lateral e o contador mostra "2 fotos" (AC 47)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "usar foto envia e conta"`
+Done: yes
 
 **C49** - "Cancelar" na câmera volta para `/animais/{id}` (AC 48)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "cancelar volta ao perfil"`
+Done: yes
 
 **C50** - Com `getUserMedia` rejeitando com `NotAllowedError`, a câmera mostra "Permita o acesso à câmera nas configurações do navegador" e "Tentar novamente" (AC 49)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "permissao negada"`
+Done: yes
 
 **C51** - Offline, a revisão desabilita "Usar foto" e mostra "Sem internet — conecte-se para enviar." (AC 50)
 Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "offline desabilita usar foto"`
+Done: yes
 
 **C52** - A câmera carrega o `.wasm` e o `.tflite` do detector de `/mediapipe/` e não faz nenhuma requisição a `cdn.jsdelivr.net` nem a `storage.googleapis.com` (porta 9)
 Proof: `pnpm playwright test tests/e2e/detector.spec.ts -g "detector servido localmente"`
+Done: yes
 
 **C53** - O detector real encontra `cow` com score ≥ 0,5 na foto de referência `tests/fixtures/cow-side.jpg` (porta 9)
 Proof: `pnpm playwright test tests/e2e/detector.spec.ts -g "detecta vaca na foto de referencia"`
+Done: yes
 
 ### S4 - Guardar a foto comprimida · 8 files · 40 KB · ~10k
 
@@ -264,15 +305,19 @@ Done: yes
 
 **C69** - Um animal sem fotos mostra no topo do perfil o placeholder com o ícone `photo_camera` e o botão voltar, que leva a `/animais` (AC 65)
 Proof: `pnpm playwright test tests/e2e/perfil.spec.ts -g "topo sem foto"`
+Done: yes
 
 **C70** - O cartão do perfil mostra "Animal #023" em 26 px peso 700, "Taurino • Macho", "24 meses • 485 kg", a grade Categoria "Taurino" / Sexo "Macho" / Idade "24 m" / Peso "485 kg" e o botão "Fotografar animal" (AC 66)
 Proof: `pnpm playwright test tests/e2e/perfil.spec.ts -g "cartao do perfil"`
+Done: yes
 
 **C71** - Com duas fotos laterais, a seção Lateral mostra "2 fotos" e as miniaturas da mais recente para a mais antiga (AC 67)
 Proof: `pnpm playwright test tests/e2e/perfil.spec.ts -g "fotos por posicao"`
+Done: yes
 
 **C72** - As seções De trás e De cima, sem fotos, mostram "Nenhuma foto" e "Adicionar fotos", que abre a câmera já na posição (AC 68)
 Proof: `pnpm playwright test tests/e2e/perfil.spec.ts -g "posicao vazia"`
+Done: yes
 
 ### S6 - Subir com Docker · 5 files · 9 KB · ~3k
 
@@ -283,12 +328,15 @@ Proof: `pnpm vitest run tests/infra/compose-smoke.test.ts -t "sobe do zero"`
 
 **C74** - Nas telas da feature o texto usa Geist, os ícones usam "Material Symbols Rounded", o fundo é `#F6F8F7`, o texto principal `#17211C`, o secundário `#68736D` e o botão primário `#1F6B45` (AC 70)
 Proof: `pnpm playwright test tests/e2e/visual.spec.ts -g "tokens do design system"`
+Done: yes
 
 **C75** - Nenhuma tela faz requisição a `fonts.googleapis.com` ou `fonts.gstatic.com` (porta 11)
 Proof: `pnpm playwright test tests/e2e/visual.spec.ts -g "fontes servidas localmente"`
+Done: yes
 
 **C76** - Em `/animais`, `/animais/novo`, perfil, câmera e revisão, todo botão e link tem pelo menos 44 × 44 px e as ações principais têm altura entre 56 e 60 px (AC 71)
 Proof: `pnpm playwright test tests/e2e/visual.spec.ts -g "areas de toque"`
+Done: yes
 
 ## Coverage
 
