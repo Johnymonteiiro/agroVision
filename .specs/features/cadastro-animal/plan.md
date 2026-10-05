@@ -94,6 +94,7 @@ and no types here.
 | 10. Ferramental de teste | Vitest (unidade: distância, validação, pipeline do sharp com imagens de fixture; integração: API contra o Postgres e o MinIO do `docker compose`) + Playwright em Chromium com `--use-fake-device-for-media-stream` | mocks de Postgres e MinIO - não pegam o índice único nem a falha de bucket; Jest - exige transformação extra para ESM/TS |
 | 11. Ícones | pacote `material-symbols` (Apache-2.0) com `import 'material-symbols/rounded.css'` e a classe `material-symbols-rounded` | folha do Google Fonts, como no arquivo de design - uma requisição externa a cada abertura, que quebra a fila offline planejada; `next/font/google` - não tem Material Symbols na lista de fontes |
 | 12. Tokens do design | `@theme` do Tailwind v4 em `app/globals.css`: `--color-primary: #1F6B45`, `--color-primary-dark: #154C35`, `--color-primary-soft: #EAF5EF`, `--color-bg: #F6F8F7`, `--color-ink: #17211C`, `--color-muted: #68736D`, `--color-line: #DDE4E0`, `--color-error: #B23E2F`, `--color-ready: #18864B`, `--color-warn: #E8A93A`; raios 12 / 14 / 16-20 | hex direto em cada componente, como no arquivo de design - a paleta deriva entre telas e cada feature seguinte copia o desvio |
+| 13. Imagem do MinIO (decisão do usuário em 2026-10-04; substitui as imagens `quay.io` da porta 1) | `minio/minio:latest` com `pull_policy: missing` - em cache na máquina de desenvolvimento, é a `RELEASE.2025-09-07T16-13-09Z`, a última comunitária; o mesmo container roda `mc` no `minio-init` e `curl` no healthcheck | `quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z` (porta 1) - o quay responde `401` desde que o MinIO fechou os repositórios; `cgr.dev/chainguard/minio` - mantida, mas o usuário escolheu a imagem do MinIO |
 
 - Nothing else in this change is hard to reverse
 
@@ -269,7 +270,7 @@ Toda tela desta feature usa os tokens do design 1o/1p.
 | --- | --- | --- | --- |
 | 1 | blocks go-live | Onde o app vai rodar (rede local ou VPN, ou internet pública)? Sem login, qualquer um que tenha a URL grava no dataset | ok para uso local e em rede privada; não expor publicamente |
 | 2 | open | Um zootecnista pode validar as dimensões de referência e dizer se Taurino e Zebu precisam de valores diferentes? | os critérios 35-37 usam os valores da tabela de premissas |
-| 3 | blocks go-live | MinIO em produção: a última imagem comunitária (`RELEASE.2025-09-07T16-13-09Z`) não recebe mais correção de segurança | serve para desenvolvimento; para produção, decidir entre um build próprio do MinIO ou outro servidor S3 compatível (o minio-js fala com qualquer um) |
+| 3 | blocks go-live | MinIO em produção: a última imagem comunitária (`RELEASE.2025-09-07T16-13-09Z`) não recebe mais correção de segurança, e uma máquina sem ela em cache não consegue baixá-la (Docker Hub apagado, quay responde `401`) | serve para esta máquina de desenvolvimento; para produção ou outra máquina, decidir entre um build próprio do MinIO, a imagem da Chainguard ou outro servidor S3 compatível (o minio-js fala com qualquer um) |
 
 ## Observable
 

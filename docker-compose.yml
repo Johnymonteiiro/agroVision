@@ -1,0 +1,78 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: gado
+      POSTGRES_PASSWORD: gado
+      POSTGRES_DB: gado_certo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gado -d gado_certo"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Última imagem comunitária do MinIO (RELEASE.2025-09-07T16-13-09Z). O Docker Hub e o quay
+  # não servem mais essa imagem: ela precisa estar em cache na máquina (pull_policy: missing).
+  minio:
+    image: minio/minio:latest
+    pull_policy: missing
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: gado
+      MINIO_ROOT_PASSWORD: gado-minio-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  minio-init:
+    image: minio/minio:latest
+    pull_policy: missing
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        mc alias set local http://minio:9000 gado gado-minio-secret &&
+        mc mb --ignore-existing local/animal-images &&
+        mc anonymous set none local/animal-images
+    restart: "no"
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://gado:gado@db:5432/gado_certo
+      S3_ENDPOINT: minio
+      S3_PORT: "9000"
+      S3_USE_SSL: "false"
+      S3_ACCESS_KEY: gado
+      S3_SECRET_KEY: gado-minio-secret
+      S3_BUCKET: animal-images
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/animais').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+volumes:
+  pgdata:
+  miniodata:
