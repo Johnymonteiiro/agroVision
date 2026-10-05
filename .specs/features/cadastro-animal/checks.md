@@ -46,9 +46,11 @@ Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "previa do card"`
 **C10** - 24 meses e 2 anos informados em 2026-10-04 dão `birth_date_estimated` = 2024-10-04, e o valor gravado pela API é hoje menos a idade (AC 10)
 Proof: `pnpm vitest run tests/unit/age.test.ts -t "data de nascimento estimada"`
 Proof: `pnpm vitest run tests/integration/api-animals.test.ts -t "grava birth_date_estimated"`
+Done: yes
 
 **C11** - A idade exibida é "24 meses" para 24 meses, "35 meses" para 35 e "3 anos" para 36 (AC 11)
 Proof: `pnpm vitest run tests/unit/age.test.ts -t "idade exibida"`
+Done: yes
 
 **C12** - Peso 29, 1501 e 450,5 são rejeitados com "Confira o peso informado"; 30 e 1500 são aceitos; o formulário não envia com o peso rejeitado (AC 12)
 Proof: `pnpm vitest run tests/unit/animal-validation.test.ts -t "limites de peso"`
@@ -56,12 +58,14 @@ Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "peso fora da faixa"`
 
 **C13** - Identificação vazia e com 21 caracteres é rejeitada com "Informe uma identificação de até 20 caracteres"; 1 e 20 caracteres são aceitos (AC 13)
 Proof: `pnpm vitest run tests/unit/animal-validation.test.ts -t "limites da identificacao"`
+Done: yes
 
 **C14** - Com "A12" cadastrado, salvar "a12 " mostra "Já existe um animal com este ID." no campo de identificação e fica em `/animais/novo` (AC 14)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "identificacao duplicada"`
 
 **C15** - `POST /api/animals` com a identificação de outro animal (diferindo só em maiúsculas e espaços) responde `409` com `fields.externalId` e a contagem de animais não muda (AC 15)
 Proof: `pnpm vitest run tests/integration/api-animals.test.ts -t "identificacao duplicada responde 409"`
+Done: yes
 
 **C16** - Digitar 1501 no peso não mostra erro; sair do campo mostra "Confira o peso informado" com o ícone `error` e texto `#B23E2F` (AC 16)
 Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "erro so ao sair do campo"`
@@ -74,12 +78,15 @@ Proof: `pnpm playwright test tests/e2e/cadastro.spec.ts -g "offline desabilita s
 
 **C19** - Repetir `POST /api/animals` com o mesmo `id` responde `200` com o animal gravado e a contagem continua 1 (AC 19)
 Proof: `pnpm vitest run tests/integration/api-animals.test.ts -t "mesmo id responde 200"`
+Done: yes
 
 **C20** - `POST /api/animals` sem `category` e com `weightKg` 10 responde `422` com `fields.category` e `fields.weightKg` e nada é gravado (AC 20)
 Proof: `pnpm vitest run tests/integration/api-animals.test.ts -t "corpo invalido responde 422"`
+Done: yes
 
 **C21** - Dois `POST /api/animals` simultâneos com a mesma identificação e `id`s diferentes resultam em um `201`, um `409` e uma linha (porta 6)
 Proof: `pnpm vitest run tests/integration/api-animals.test.ts -t "concorrencia na identificacao"`
+Done: yes
 
 ### S2 - Encontrar o animal na lista · 4 files · 22 KB · ~6k
 
@@ -120,15 +127,19 @@ Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "dicas por posicao"`
 
 **C33** - Para um quadro 1000 × 750 mostrado em 1000 × 750 px, a moldura vai de (50, 37,5) a (950, 712,5) (AC 32)
 Proof: `pnpm vitest run tests/unit/guide-rect.test.ts -t "moldura recuada 5 por cento"`
+Done: yes
 
 **C34** - A distância é exibida arredondada para cima em 0,1 m com vírgula: 2,093 → "2,1 m", 2,0 → "2,0 m", 2,01 → "2,1 m" (AC 33)
 Proof: `pnpm vitest run tests/unit/min-distance.test.ts -t "formato da distancia"`
+Done: yes
 
 **C35** - A fórmula vale para as três posições nas duas orientações (450 kg, 65°, 4:3): Lateral 2,1 / 2,8; De trás 1,7 / 1,3; De cima 2,1 / 2,8 (horizontal / vertical, em m) (AC 34)
 Proof: `pnpm vitest run tests/unit/min-distance.test.ts -t "tres posicoes nas duas orientacoes"`
+Done: yes
 
 **C36** - Um animal de 225 kg na Lateral, 65°, 4:3 horizontal, mostra "Distância mínima: 1,7 m" (AC 35)
 Proof: `pnpm vitest run tests/unit/min-distance.test.ts -t "escala pelo peso"`
+Done: yes
 
 **C37** - Lateral, 450 kg, 65°, quadro 4:3 horizontal mostra "Distância mínima: 2,1 m" (AC 36)
 Proof: `pnpm vitest run tests/unit/min-distance.test.ts -t "lateral 450 kg horizontal"`
@@ -136,6 +147,7 @@ Proof: `pnpm playwright test tests/e2e/camera.spec.ts -g "mostra distancia minim
 
 **C38** - O mesmo animal com o celular na vertical (quadro 3:4) mostra "Distância mínima: 2,8 m" (AC 37)
 Proof: `pnpm vitest run tests/unit/min-distance.test.ts -t "lateral 450 kg vertical"`
+Done: yes
 
 **C39** - Uma caixa `cow` com score 0,8 de (10%, 20%) a (90%, 80%) é `FRAMED`, e a tela mostra "Enquadrado" com os cantos em `#7FD1A3` (AC 38)
 Proof: `pnpm vitest run tests/unit/framing.test.ts -t "enquadrado"`
@@ -190,50 +202,65 @@ Proof: `pnpm playwright test tests/e2e/detector.spec.ts -g "detecta vaca na foto
 
 **C54** - Uma foto 4000 × 3000 sem rotação enviada por `POST /api/animals/{id}/images` responde `201` e o JPEG gravado tem 2048 × 1536 e nenhum EXIF (AC 51)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "foto horizontal vira 2048x1536 sem exif"`
+Done: yes
 
 **C55** - Uma foto 4000 × 3000 com EXIF `Orientation` = 6 é gravada como JPEG 1536 × 2048 (AC 52)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "orientacao 6 vira retrato"`
+Done: yes
 
 **C56** - A miniatura de uma foto 4000 × 3000 é um WebP de 320 × 240 (AC 53)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "miniatura webp 320"`
+Done: yes
 
 **C57** - Os objetos existem em `animal-images` nas chaves `animals/{animalId}/SIDE/{imageId}.jpg` e `animals/{animalId}/SIDE/{imageId}_thumb.webp` (AC 54)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "chaves no bucket"`
+Done: yes
 
 **C58** - A linha da imagem grava `SIDE`, `FRAMED`, a distância 2,1, `capturedAt`, 2048, 1536, o tamanho em bytes do JPEG, `weight_kg_at_capture` = 485 e `age_months_at_capture` = 24 (AC 55)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "linha com snapshots"`
+Done: yes
 
 **C59** - Um arquivo de 15 MB + 1 byte responde `413` e não deixa objeto nem linha (AC 56)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "arquivo grande responde 413"`
+Done: yes
 
 **C60** - Um arquivo de texto enviado como foto responde `415` e não deixa objeto nem linha (AC 57)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "nao imagem responde 415"`
+Done: yes
 
 **C61** - Enviar para um animal inexistente responde `404` e não deixa objeto nem linha (AC 58)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "animal inexistente responde 404"`
+Done: yes
 
 **C62** - `position` = `FRONT` responde `422`, e `framing` = `OK` responde `422`, sem objeto nem linha (AC 59)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "enum invalido responde 422"`
+Done: yes
 
 **C63** - Com o armazenamento recusando a gravação, a rota responde `503` e nenhuma linha é criada (AC 60)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "armazenamento fora responde 503"`
+Done: yes
 
 **C64** - Com o banco falhando depois do upload, os dois objetos gravados são apagados e a rota responde `500` (AC 61)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "falha no banco apaga objetos"`
+Done: yes
 
 **C65** - Reenviar o mesmo `imageId` responde `200` com a imagem existente, e o bucket e a tabela continuam com um item (AC 62)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "mesmo imageId responde 200"`
+Done: yes
 
 **C66** - `GET /api/images/{id}?variant=thumb` responde `200` `image/webp`, `variant=full` responde `200` `image/jpeg`, e um id inexistente responde `404` (AC 63)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "leitura de imagem"`
+Done: yes
 
 **C67** - Uma leitura anônima direta no MinIO de um objeto de `animal-images` recebe `403` (AC 64)
 Proof: `pnpm vitest run tests/integration/bucket-policy.test.ts -t "leitura anonima negada"`
+Done: yes
 
 ### S5 - Ver o animal e as fotos por posição · 4 files · 20 KB · ~5k
 
 **C68** - A foto principal é a lateral mais recente; sem lateral, a mais recente de outra posição; sem foto, nenhuma (AC 65)
 Proof: `pnpm vitest run tests/unit/main-photo.test.ts -t "regra da foto principal"`
+Done: yes
 
 **C69** - Um animal sem fotos mostra no topo do perfil o placeholder com o ícone `photo_camera` e o botão voltar, que leva a `/animais` (AC 65)
 Proof: `pnpm playwright test tests/e2e/perfil.spec.ts -g "topo sem foto"`
@@ -283,11 +310,11 @@ Proof: `pnpm playwright test tests/e2e/visual.spec.ts -g "areas de toque"`
 | orientation (2) | horizontal C37 · vertical C38 | - |
 | main photo rule (3) | lateral C68 · other position C68 · none C68 | - |
 | capture flow transitions (4) | câmera -> revisão C46 · revisão -> câmera por "Tirar outra foto" C47 · revisão -> câmera por "Usar foto" C48 · câmera -> perfil C49 | - |
-| Landing doors (12) | 1 compose C73 · 2 migrações C73 · 3 chaves C57 · 4 compressão C54 · 5 rota com id do cliente C19 · 6 unicidade C15 · 7 enums C62 · 8 snapshots C58 · 9 detector local C52 · 10 ferramental C1 · 11 ícones C75 · 12 tokens C74 | - |
+| Landing doors (13) | 1 compose C73 · 2 migrações C73 · 3 chaves C57 · 4 compressão C54 · 5 rota com id do cliente C19 · 6 unicidade C15 · 7 enums C62 · 8 snapshots C58 · 9 detector local C52 · 10 ferramental C1 · 11 ícones C75 · 12 tokens C74 · 13 imagem do MinIO C73 | - |
 | entities (2) | `Animal` C1 · `AnimalImage` C58 | - |
 | startup config: `DATABASE_URL` and `S3_*` (3 assemblies) | `app` do compose C73 · harness do Vitest C54 · `webServer` do Playwright C1 | - |
 
-- Claims naming a status code, route or response shape: C1, C15, C19, C20, C21, C54-C67 - each proof calls the route over HTTP or reads the bucket directly
+- Claims naming a status code, route or response shape: C1, C15, C19, C20, C21, C54-C67 - each proof invokes the exported route handler with a real `Request` against the real Postgres and MinIO, or reads the bucket over HTTP (C67); C1 also crosses HTTP through the browser
 - C39-C42 have a proof at the decision layer (`framing.test.ts`) and one at the screen; the screen proof injects the detection, so the real detector is proven separately by C53
 - No other check claims more than the single case its proof exercises
 
