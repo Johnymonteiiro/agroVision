@@ -410,3 +410,7 @@ Tamanhos estimados pelo conteúdo que cada slice cria (repositório vazio, `wc -
 S1 46 KB + S2 22 KB + S3 64 KB + S4 40 KB + S5 20 KB + S6 9 KB + S7 9 KB = 210 KB ÷ 4 ≈ 53k.
 
 - S1-S4 = 44k, cruzam API, banco, MinIO e câmera; S5-S7 levam a 53k no total, abaixo do budget de 150k - one builder
+
+- **Boundary:** C1-C76 closed at `6274658` (feature base `1ffd1b8`)
+- **Settled mid-build:** imagem do MinIO trocada por `minio/minio:latest` em cache (porta 13, decisão do usuário); a câmera pede 4:3 (1920 × 1440) porque 16:9 recorta o sensor; as migrações rodam em `instrumentation.ts` quando o `server.js` sobe, antes do primeiro request; o teste de fumaça usa o projeto Compose `gado-smoke` para que o `down -v` não apague os volumes de desenvolvimento
+- **Abandoned:** `quay.io/minio/minio` (responde `401`); abrir a câmera via `useCallback` chamado no effect (regra `react-hooks/set-state-in-effect`); `test.use({ launchOptions })` dentro de `describe` no Playwright (proibido; passou para o topo de `detector.spec.ts`)
