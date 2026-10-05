@@ -323,6 +323,7 @@ Done: yes
 
 **C73** - Depois de `docker compose down -v`, `docker compose up -d --wait` deixa o bucket privado `animal-images` criado, as migrações aplicadas e `GET http://localhost:3000/animais` respondendo `200` (AC 69)
 Proof: `pnpm vitest run tests/infra/compose-smoke.test.ts -t "sobe do zero"`
+Done: yes
 
 ### S7 - Linguagem visual · 3 files · 9 KB · ~3k
 
