@@ -82,7 +82,8 @@ test("chips de filtro", async ({ page, request }) => {
 test("estado vazio", async ({ page }) => {
   await page.goto("/animais");
   await expect(page.getByText("Nenhum animal cadastrado")).toBeVisible();
-  await expect(page.locator('[data-icon="sell"]')).toBeVisible();
+  // A aba Animais da barra inferior também usa o ícone sell; o estado vazio é o do conteúdo.
+  await expect(page.getByRole("main").locator('[data-icon="sell"]')).toBeVisible();
   await expect(page.getByRole("link", { name: "Adicionar animal" }).last()).toBeVisible();
 });
 

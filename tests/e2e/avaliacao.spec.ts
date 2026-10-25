@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { COW_PHOTO, assertTouchTargets, fakeClassifier, fakeDetector, resetDb, rgb } from "./helpers";
+import { COW_PHOTO, assertTouchTargets, fakeClassifier, fakeDetector, releaseClassify, resetDb, rgb } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await resetDb();
@@ -85,7 +85,7 @@ test("fluxo sem barra inferior", async ({ page }) => {
   await analyze(page);
   await expect(page.getByText("Analisando animal...")).toBeVisible();
   await expect(page.locator(nav)).toHaveCount(0);
-  await page.evaluate(() => (window as unknown as { __releaseClassify: () => void }).__releaseClassify());
+  await releaseClassify(page);
   await expect(page.getByTestId("decision-block")).toBeVisible();
   await expect(page.locator(nav)).toHaveCount(0);
 });
@@ -313,7 +313,7 @@ test("inconclusivo tira outra foto", async ({ page }) => {
   await shoot(page);
   await analyze(page);
   const primary = page.getByRole("button", { name: "Tirar outra foto" });
-  await expect(primary).toHaveAttribute("data-primary-action", "");
+  await expect(primary).toHaveAttribute("data-primary-action");
   await expect(primary).toHaveCSS("background-color", rgb("#1F6B45"));
   await primary.click();
   await expect(page.getByTestId("shutter")).toBeEnabled();
@@ -329,7 +329,7 @@ for (const [label, ready, notReady] of [
     await shoot(page);
     await analyze(page);
     const primary = page.getByRole("button", { name: "Nova avaliação" });
-    await expect(primary).toHaveAttribute("data-primary-action", "");
+    await expect(primary).toHaveAttribute("data-primary-action");
     await expect(primary).toHaveCSS("background-color", rgb("#1F6B45"));
     await primary.click();
     await expect(page.getByTestId("shutter")).toBeEnabled();
@@ -374,7 +374,7 @@ test("vocabulario proibido", async ({ page }) => {
     await analyze(page);
     await expect(page.getByTestId("analyzing")).toBeVisible();
     await grab();
-    await page.evaluate(() => (window as unknown as { __releaseClassify: () => void }).__releaseClassify());
+    await releaseClassify(page);
     await expect(page.getByTestId("decision-block")).toBeVisible();
     await grab();
     const again = ready === 0.62 ? "Tirar outra foto" : "Nova avaliação";

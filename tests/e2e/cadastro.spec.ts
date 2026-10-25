@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createAnimal, fillForm, resetDb, rgb } from "./helpers";
+import { createAnimal, fillForm, imageRows, resetDb, rgb } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await resetDb();
@@ -16,12 +16,10 @@ test("salvar cria o animal, envia a foto e abre o perfil", async ({ page }) => {
   const image = page.waitForResponse((r) => isImageUpload(r.request()));
   await saveButton(page).click();
   expect((await animal).status()).toBe(201);
-  const upload = await image;
-  expect(upload.status()).toBe(201);
-  const body = upload.request().postDataBuffer()!.toString("latin1");
-  expect(body).toMatch(/name="position"\r\n\r\nSIDE\r\n/);
-  // Foto da galeria não passou pelo guia ao vivo.
-  expect(body).toMatch(/name="framing"\r\n\r\nUNAVAILABLE\r\n/);
+  expect((await image).status()).toBe(201);
+  // O Playwright não expõe o corpo de um upload feito a partir de um arquivo escolhido; o banco diz o que foi gravado.
+  // Foto da galeria não passou pelo guia ao vivo, então o enquadramento é UNAVAILABLE.
+  expect(await imageRows()).toEqual([{ position: "SIDE", framing: "UNAVAILABLE" }]);
   await expect(page).toHaveURL(/\/animais\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { name: "Animal #023" })).toBeVisible();
   await expect(page.getByTestId("position-SIDE")).toContainText("1 foto");

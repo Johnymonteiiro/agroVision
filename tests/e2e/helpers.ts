@@ -127,7 +127,10 @@ export async function fakeClassifier(page: Page, m: FakeModel = {}) {
       model: { name: "CattleClassifier", version: m.version ?? "1.4.0", threshold: { READY: 0.85, NOT_READY: 0.85 } },
       classify: () =>
         new Promise((resolve) => {
-          const done = () => resolve(w.__probs);
+          const done = () => {
+            w.__releaseClassify = undefined;
+            resolve(w.__probs);
+          };
           if (m.holdClassify) w.__releaseClassify = done;
           else done();
         }),
@@ -138,6 +141,21 @@ export async function fakeClassifier(page: Page, m: FakeModel = {}) {
       return Promise.resolve(classifier);
     };
   }, m);
+}
+
+/** Libera a classificação retida por `holdClassify`, esperando o `classify` da análise atual ser chamado. */
+export async function releaseClassify(page: Page) {
+  await page.waitForFunction(() => typeof (window as unknown as Record<string, unknown>).__releaseClassify === "function");
+  await page.evaluate(() => (window as unknown as { __releaseClassify: () => void }).__releaseClassify());
+}
+
+/** Linhas de `animal_images`, para conferir o que o upload gravou. */
+export async function imageRows() {
+  const client = new pg.Client({ connectionString: TEST_ENV.DATABASE_URL });
+  await client.connect();
+  const { rows } = await client.query<{ position: string; framing: string }>("select position, framing from animal_images");
+  await client.end();
+  return rows;
 }
 
 /** Detector de enquadramento sem detecções, para a câmera não carregar o MediaPipe real. */

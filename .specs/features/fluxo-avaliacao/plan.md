@@ -24,7 +24,7 @@ barra inferior (`components/tab-bar.tsx`), `useOnline` e o gancho de teste do de
 precedente; nada de câmera ou revisão é reescrito.
 
 1. abertura do app -> `/` (door 3) - a Home (telas 1a/1b) dentro do grupo `app/(tabs)`, com a barra inferior; mostra o chip de conexão e o estado do modelo pedido a `loadClassifier()` (door 1)
-2. "Tirar foto" na Home ou botão central da barra -> `/analisar` (door 3) - fora do grupo `(tabs)`, sem a barra; abre `GuidedCamera` (exists) na posição Lateral, sem peso e com Galeria no lugar do contador
+2. "Tirar foto" na Home ou botão central da barra -> `/analisar?de=<origem>` (door 3) - fora do grupo `(tabs)`, sem a barra; abre `GuidedCamera` (exists) na posição Lateral, sem peso e com Galeria no lugar do contador; "Cancelar" volta para `de`
 3. "Escolher da galeria" na Home -> seletor de arquivos na própria Home; o arquivo segue em memória para `/analisar`, que abre direto na revisão
 4. `GuidedCamera` (exists) - revisão da tela 1d; "Analisar imagem" entrega a foto (`Blob`) ao fluxo, só em memória
 5. `loadClassifier()` (door 1) - devolve um `Classifier` ou rejeita com `ModelUnavailableError` (sem modelo) ou outro erro (falha ao carregar)
