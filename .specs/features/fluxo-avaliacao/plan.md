@@ -80,6 +80,10 @@ O app abre na Home e dela parte a avaliação.
 6. WHILE nenhum modelo está instalado the system SHALL mostrar abaixo do cartão a linha "Modelo de IA ainda não disponível" com o ícone `offline_bolt` em `#68736D`
 7. WHERE um modelo está instalado the system SHALL mostrar abaixo do cartão "IA disponível offline" com "Modelo instalado: v<versão>" lido de `Classifier.model.version`
 8. The system SHALL mostrar a barra inferior na Home com a aba Home ativa, e a aba Home SHALL levar a `/`
+39. WHILE o dispositivo está offline, WHERE um modelo está instalado the system SHALL mostrar a linha do modelo numa linha só, "IA disponível offline" à esquerda e "Modelo v<versão>" à direita (design 1b)
+41. WHILE a Home ainda consulta `loadClassifier()` the system SHALL não mostrar nenhuma linha de modelo
+42. IF `loadClassifier()` falha na Home com um erro que não é `ModelUnavailableError` THEN the system SHALL mostrar a linha "Modelo de IA ainda não disponível"
+46. The system SHALL mostrar na Home os ícones do design 1a: `photo_camera` preenchido num círculo de 76 px com fundo `#EAF5EF` no topo do cartão, `photo_camera` em "Tirar foto" e `photo_library` em "Escolher da galeria"
 
 **Independent test:** abrir `/`, ver a Home com o chip, o cartão e "Modelo de IA ainda não disponível"; desligar a rede e ver o chip "Offline".
 
@@ -99,6 +103,9 @@ O usuário chega a uma foto que ele confirmou ser boa para análise.
 16. WHEN o usuário toca "Tirar outra foto" na revisão THEN the system SHALL descartar a foto e voltar para a câmera
 17. WHEN o usuário toca "Cancelar" na câmera THEN the system SHALL voltar para a tela anterior, ou para `/` quando `/analisar` foi aberto direto
 18. The system SHALL não fazer nenhuma requisição a `/api/` do início do fluxo até o resultado
+38. WHILE a revisão está aberta the system SHALL mostrar sobre a foto, no topo à esquerda, o botão voltar (`arrow_back`, 44 px, fundo branco) que descarta a foto e volta para a câmera (design 1d)
+45. IF o parâmetro `de` de `/analisar` não é um caminho deste app (`//host`, `/\host`, `https://host`, ausente ou repetido) THEN "Cancelar" SHALL levar a `/`
+47. The system SHALL mostrar na câmera de avaliação o bloco "Galeria" com o ícone `photo_library` e a legenda "Galeria" visível, e na revisão o ícone `replay` em "Tirar outra foto"
 
 **Independent test:** com a câmera falsa, tirar a foto, ver a revisão, tirar outra, escolher da galeria e ver a revisão de novo, sem nenhuma chamada a `/api/`.
 
@@ -123,9 +130,14 @@ A foto vira uma decisão com confiança, calculada no aparelho, ou o aviso hones
 31. WHEN a decisão é `INCONCLUSIVE` THEN the system SHALL mostrar o bloco `#E8A93A` com texto `#2E2206`, o ícone `help` e "RESULTADO INCONCLUSIVO", a barra com uma marca no limiar rotulada "mínimo <limiar READY>%", "A IA não conseguiu determinar o resultado com confiança suficiente. Uma nova foto costuma resolver." e as orientações "Tire outra foto com o animal inteiro visível.", "Evite sombras fortes." e "Fotografe o animal lateralmente."
 32. WHEN a decisão é `INCONCLUSIVE` THEN the system SHALL oferecer "Tirar outra foto" como ação primária, que volta para a câmera
 33. WHEN a decisão é `READY` ou `NOT_READY` THEN the system SHALL oferecer "Nova avaliação" como ação primária, que volta para a câmera
-34. The system SHALL mostrar em todo resultado a foto analisada no topo, o botão fechar (`close`) que leva a `/`, as linhas "Modelo" (`<name> v<version>`) e "Data" (`25 out 2026, 09:42`), e o aviso "Este resultado é uma estimativa gerada pelo modelo de IA."
+34. WHEN a decisão é `READY` ou `NOT_READY` THEN the system SHALL mostrar a foto analisada no topo, o botão fechar (`close`) que leva a `/`, as linhas "Modelo" (`<name> v<version>`) e "Data" (`25 out 2026, 09:42`), e o aviso "Este resultado é uma estimativa gerada pelo modelo de IA." (revisto em 2026-10-25 por decisão do usuário: antes valia para todo resultado, o que contradizia o design 1h)
 35. The system SHALL nunca exibir as palavras "autorizado" ou "aprovado" em nenhuma tela do fluxo
 36. The system SHALL dar a todo controle tocável da Home e do fluxo pelo menos 44 × 44 px, e às ações principais altura entre 56 e 60 px
+37. WHEN a decisão é `INCONCLUSIVE` THEN the system SHALL mostrar a foto no topo e o botão fechar, sem as linhas "Modelo" e "Data" e sem o aviso de estimativa (design 1h)
+40. WHILE a análise roda com o modelo já carregado the system SHALL mostrar no rodapé da tela "Analisando" o ícone `memory` e "<name> v<version> · no dispositivo"
+43. IF `Classifier.classify` falha THEN the system SHALL mostrar "Erro ao carregar o modelo" com "Tentar novamente", como na falha de carregamento
+44. The system SHALL mostrar nas telas de modelo indisponível, erro de carregamento e foto inválida o botão fechar (`close`, 44 px) que leva a `/`
+48. The system SHALL mostrar os ícones do design: `photo_camera` na ação primária do resultado; `open_in_full`, `wb_shade` e `swap_horiz` nas orientações do inconclusivo, dentro de uma caixa de fundo `#FBF4E6`; um indicador girando em "Carregando modelo..."; `report` num círculo de fundo `#FAEBE8` no erro de carregamento e `image_not_supported` num círculo de fundo `#FBF1DE` na foto inválida (design 1q)
 
 **Independent test:** com o app real, "Analisar imagem" termina em "Modelo de IA ainda não disponível"; com um classificador falso pelo gancho, as três decisões aparecem com cor, ícone, confiança e modelo.
 
@@ -151,6 +163,7 @@ A foto vira uma decisão com confiança, calculada no aparelho, ou o aviso hones
 | Estado do modelo na Home | a Home chama `loadClassifier()` ao abrir e mostra a linha do critério 6 ou 7 conforme o resultado | sem modelo a rejeição é imediata; com modelo, o carregamento antecipado encurta a primeira análise | n |
 | Câmera de avaliação | a posição é sempre Lateral e o detector de enquadramento da F1 continua ligado | o design 1c pede "Fotografe de lado" e mostra a moldura verde | n |
 | Formato da data | dia, mês abreviado em português, ano e hora (`25 out 2026, 09:42`) | é o formato do design 1f com a data de hoje | n |
+| Botão fechar nas telas de estado | as telas de modelo indisponível, erro e foto inválida ganham o fechar do topo (critério 44), que o 1q não desenha | o 1q desenha cartões de estado, não telas inteiras; sem o fechar, a tela de erro vira beco sem saída | n |
 
 **Open questions:** duas seguem abertas.
 
@@ -164,8 +177,8 @@ A foto vira uma decisão com confiança, calculada no aparelho, ou o aviso hones
 | Surface | Decision | Landing |
 | --- | --- | --- |
 | screen Home | empty state | n/a - a Home não lista dados; o resumo de avaliações é do registro de avaliações |
-| screen Home | loading state | AC 6 - sem modelo a rejeição de `loadClassifier()` é imediata; a linha do modelo só aparece resolvida |
-| screen Home | error state | AC 6 - falha ao consultar o modelo é tratada como modelo não disponível na Home; o erro detalhado aparece na análise (AC 22) |
+| screen Home | loading state | AC 41 - a linha do modelo só aparece resolvida |
+| screen Home | error state | AC 42 - falha ao consultar o modelo é tratada como modelo não disponível na Home; o erro detalhado aparece na análise (AC 22, AC 43) |
 | screen Home | unauthorised state | n/a - o MVP não tem contas nem login |
 | screen Home | density and ordering | AC 2, AC 5, AC 6, AC 8 |
 | screen Home | offline state | AC 3, AC 4 |

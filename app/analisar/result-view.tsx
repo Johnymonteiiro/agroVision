@@ -40,7 +40,10 @@ export function ResultView({ url, model, probs, at, onAgain }: Props) {
         </Link>
       </div>
 
-      <section className="relative mx-3 -mt-[38px] flex flex-1 flex-col rounded-card-lg bg-white p-4 shadow-[0_1px_2px_rgba(23,33,28,.04),0_8px_24px_rgba(23,33,28,.06)]">
+      <section
+        data-testid="result-card"
+        className="relative mx-3 -mt-[38px] flex flex-1 flex-col rounded-card-lg bg-white p-4 shadow-[0_1px_2px_rgba(23,33,28,.04),0_8px_24px_rgba(23,33,28,.06)]"
+      >
         <div
           data-testid="decision-block"
           className={`flex h-16 items-center justify-center gap-2.5 rounded-btn font-bold tracking-[0.02em] ${look.block}`}
@@ -91,18 +94,21 @@ export function ResultView({ url, model, probs, at, onAgain }: Props) {
           </>
         )}
 
-        <dl className="mt-4 border-t border-line-soft">
-          <div data-testid="result-model" className="flex h-[42px] items-center justify-between border-b border-line-soft text-[15px]">
-            <dt className="text-muted">Modelo</dt>
-            <dd className="font-medium">
-              {model.name} v{model.version}
-            </dd>
-          </div>
-          <div data-testid="result-date" className="flex h-[42px] items-center justify-between text-[15px]">
-            <dt className="text-muted">Data</dt>
-            <dd className="font-medium">{formatResultDate(at)}</dd>
-          </div>
-        </dl>
+        {/* O inconclusivo (design 1h) fica focado na nova foto: sem modelo, data nem aviso. */}
+        {!inconclusive && (
+          <dl className="mt-4 border-t border-line-soft">
+            <div data-testid="result-model" className="flex h-[42px] items-center justify-between border-b border-line-soft text-[15px]">
+              <dt className="text-muted">Modelo</dt>
+              <dd className="font-medium">
+                {model.name} v{model.version}
+              </dd>
+            </div>
+            <div data-testid="result-date" className="flex h-[42px] items-center justify-between text-[15px]">
+              <dt className="text-muted">Data</dt>
+              <dd className="font-medium">{formatResultDate(at)}</dd>
+            </div>
+          </dl>
+        )}
 
         <div className="mt-auto flex flex-col gap-2.5 pt-4">
           <button
@@ -114,9 +120,11 @@ export function ResultView({ url, model, probs, at, onAgain }: Props) {
             <Icon name="photo_camera" />
             {inconclusive ? "Tirar outra foto" : "Nova avaliação"}
           </button>
-          <p className="mt-0.5 text-center text-[12px] leading-[1.4] text-muted">
-            Este resultado é uma estimativa gerada pelo modelo de IA.
-          </p>
+          {!inconclusive && (
+            <p className="mt-0.5 text-center text-[12px] leading-[1.4] text-muted">
+              Este resultado é uma estimativa gerada pelo modelo de IA.
+            </p>
+          )}
         </div>
       </section>
     </main>

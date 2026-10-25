@@ -68,6 +68,9 @@ test("sem modelo na home", async ({ page }) => {
   await expect(status).toHaveText(/Modelo de IA ainda não disponível/);
   await expect(status.locator('[data-icon="offline_bolt"]')).toHaveCSS("color", rgb("#68736D"));
   await expect(page.getByText("IA disponível offline")).toHaveCount(0);
+  // "abaixo do cartão"
+  const card = (await page.getByTestId("home-card").boundingBox())!;
+  expect((await status.boundingBox())!.y).toBeGreaterThanOrEqual(card.y + card.height);
 });
 
 test("modelo instalado na home", async ({ page }) => {
@@ -76,6 +79,62 @@ test("modelo instalado na home", async ({ page }) => {
   const status = page.getByTestId("model-status");
   await expect(status).toContainText("IA disponível offline");
   await expect(status).toContainText("Modelo instalado: v1.4.0");
+});
+
+test("modelo offline em uma linha", async ({ page, context }) => {
+  await fakeClassifier(page, { version: "1.4.0" });
+  await page.goto("/");
+  await expect(page.getByTestId("model-status")).toContainText("IA disponível offline");
+  await context.setOffline(true);
+  const label = page.getByTestId("model-status-label");
+  const version = page.getByTestId("model-status-version");
+  await expect(label).toHaveText("IA disponível offline");
+  await expect(version).toHaveText("Modelo v1.4.0");
+  const l = (await label.boundingBox())!;
+  const v = (await version.boundingBox())!;
+  expect(Math.abs(l.y + l.height / 2 - (v.y + v.height / 2))).toBeLessThan(4);
+  expect(v.x).toBeGreaterThan(l.x + l.width);
+  await context.setOffline(false);
+});
+
+test("home espera o modelo", async ({ page }) => {
+  await fakeClassifier(page, { load: "pending" });
+  await page.goto("/");
+  await page.waitForFunction(() => typeof (window as unknown as Record<string, unknown>).__releaseModel === "function");
+  await expect(page.getByTestId("model-status")).toHaveCount(0);
+  await page.evaluate(() => (window as unknown as { __releaseModel: () => void }).__releaseModel());
+  await expect(page.getByTestId("model-status")).toContainText("IA disponível offline");
+});
+
+test("falha do modelo na home", async ({ page }) => {
+  await fakeClassifier(page, { load: "fail" });
+  await page.goto("/");
+  await expect(page.getByTestId("model-status")).toHaveText(/Modelo de IA ainda não disponível/);
+});
+
+test("arranjo da home", async ({ page }) => {
+  const inside = (outer: { x: number; y: number; width: number; height: number }, inner: typeof outer) =>
+    inner.x >= outer.x - 0.5 &&
+    inner.y >= outer.y - 0.5 &&
+    inner.x + inner.width <= outer.x + outer.width + 0.5 &&
+    inner.y + inner.height <= outer.y + outer.height + 0.5;
+
+  await page.goto("/");
+  await expect(page.getByTestId("model-status")).toBeVisible();
+  const card = (await page.getByTestId("home-card").boundingBox())!;
+  const heading = (await page.getByRole("heading", { name: "Analisar animal" }).boundingBox())!;
+  const subtitle = (await page.getByText("Tire uma foto ou selecione uma imagem").boundingBox())!;
+  const shoot = (await page.getByRole("link", { name: "Tirar foto" }).boundingBox())!;
+  const gallery = (await page.getByRole("button", { name: "Escolher da galeria" }).boundingBox())!;
+  for (const b of [heading, subtitle, shoot, gallery]) expect(inside(card, b)).toBe(true);
+  expect(shoot.y + shoot.height).toBeLessThanOrEqual(gallery.y);
+  expect((await page.getByTestId("model-status").boundingBox())!.y).toBeGreaterThanOrEqual(card.y + card.height);
+
+  await fakeClassifier(page);
+  await page.reload();
+  await expect(page.getByTestId("model-status")).toContainText("IA disponível offline");
+  const cardWithModel = (await page.getByTestId("home-card").boundingBox())!;
+  expect((await page.getByTestId("model-status").boundingBox())!.y).toBeGreaterThanOrEqual(cardWithModel.y + cardWithModel.height);
 });
 
 test("aba home", async ({ page, request }) => {

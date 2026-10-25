@@ -132,7 +132,7 @@ export function EvaluationFlow({ origin }: { origin: string }) {
     case "loading-model":
       return (
         <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col items-center justify-center px-8 text-center">
-          <div className="size-12 animate-spin rounded-full border-4 border-primary-soft border-t-primary" />
+          <div data-testid="model-spinner" className="size-12 animate-spin rounded-full border-4 border-primary-soft border-t-primary" />
           <p className="mt-4 text-[17px] font-semibold">Carregando modelo...</p>
           <p className="mt-1 text-[14px] leading-[1.4] text-muted">Só na primeira abertura.</p>
         </main>
@@ -275,7 +275,7 @@ function StateScreen({
       <Link href="/" aria-label="Fechar" className="absolute left-4 top-3 flex size-11 items-center justify-center rounded-full bg-white">
         <Icon name="close" />
       </Link>
-      <div className={`flex size-16 items-center justify-center rounded-full ${tone}`}>
+      <div data-testid="state-icon" className={`flex size-16 items-center justify-center rounded-full ${tone}`}>
         <Icon name={icon} size={30} />
       </div>
       <h1 className="mt-3.5 text-[17px] font-semibold">{title}</h1>

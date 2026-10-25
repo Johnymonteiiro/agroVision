@@ -108,6 +108,7 @@ export async function assertTouchTargets(page: Page) {
 type FakeModel = {
   load?: "ready" | "pending" | "fail";
   holdClassify?: boolean;
+  classifyFails?: boolean;
   ready?: number;
   notReady?: number;
   version?: string;
@@ -126,7 +127,8 @@ export async function fakeClassifier(page: Page, m: FakeModel = {}) {
     const classifier = {
       model: { name: "CattleClassifier", version: m.version ?? "1.4.0", threshold: { READY: 0.85, NOT_READY: 0.85 } },
       classify: () =>
-        new Promise((resolve) => {
+        new Promise((resolve, reject) => {
+          if (m.classifyFails) return reject(new Error("falha simulada na classificação"));
           const done = () => {
             w.__releaseClassify = undefined;
             resolve(w.__probs);

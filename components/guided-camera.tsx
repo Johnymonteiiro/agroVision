@@ -442,7 +442,18 @@ export function PhotoReview({ url, question, info, action, onRetake, children }:
     <section className="absolute inset-0 z-20 bg-camera" data-testid="review">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt="Foto capturada" data-testid="review-photo" className="h-[66%] w-full object-cover" />
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-[24px] bg-white px-5 pb-[34px] pt-6 text-ink">
+      <button
+        type="button"
+        aria-label="Voltar"
+        onClick={onRetake}
+        className="absolute left-4 top-3 flex size-11 items-center justify-center rounded-full bg-white/90 text-ink"
+      >
+        <Icon name="arrow_back" />
+      </button>
+      <div
+        data-testid="review-sheet"
+        className="absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-[24px] bg-white px-5 pb-[34px] pt-6 text-ink"
+      >
         <h2 className="mb-1 text-[22px] font-bold leading-[1.25] tracking-[-0.01em]">{question}</h2>
         {info}
         <button

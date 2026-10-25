@@ -28,8 +28,11 @@ export default function HomePage() {
         Analise um animal usando a câmera ou uma foto.
       </p>
 
-      <section className="mx-4 flex flex-col items-center rounded-card-lg bg-white px-5 pb-5 pt-7 text-center shadow-[0_1px_2px_rgba(23,33,28,.04),0_8px_24px_rgba(23,33,28,.05)]">
-        <div className="flex size-[76px] items-center justify-center rounded-full bg-primary-soft text-primary">
+      <section
+        data-testid="home-card"
+        className="mx-4 flex flex-col items-center rounded-card-lg bg-white px-5 pb-5 pt-7 text-center shadow-[0_1px_2px_rgba(23,33,28,.04),0_8px_24px_rgba(23,33,28,.05)]"
+      >
+        <div data-testid="home-card-icon" className="flex size-[76px] items-center justify-center rounded-full bg-primary-soft text-primary">
           <Icon name="photo_camera" size={38} fill />
         </div>
         <h2 className="mt-[18px] text-[26px] font-bold leading-[1.15] tracking-[-0.02em]">Analisar animal</h2>
