@@ -32,10 +32,9 @@ test("botao central de camera elevado", async ({ page }) => {
 });
 
 test("abas sem feature mostram em breve", async ({ page }) => {
+  // Home e Analisar deixaram de ser "Em breve" com o fluxo de avaliação (fluxo-avaliacao C1, C9).
   for (const [tab, url, title] of [
-    ["Home", "/inicio", "Home"],
     ["Histórico", "/historico", "Histórico"],
-    ["Analisar", "/analisar", "Analisar"],
     ["Ajustes", "/ajustes", "Configurações"],
   ]) {
     await page.goto("/animais");

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createAnimal, fillForm, resetDb, rgb } from "./helpers";
+import { assertTouchTargets, createAnimal, fillForm, resetDb, rgb } from "./helpers";
 
 async function fakeDetector(page: Page) {
   await page.addInitScript(() => {
@@ -43,30 +43,6 @@ test("fontes servidas localmente", async ({ page }) => {
   }
   expect(external).toEqual([]);
 });
-
-async function assertTouchTargets(page: Page) {
-  const report = await page.evaluate(() => {
-    const els = [...document.querySelectorAll<HTMLElement>("a, button, input")].filter((el) => el.offsetParent !== null);
-    return els.map((el) => {
-      const r = el.getBoundingClientRect();
-      return {
-        label: el.getAttribute("aria-label") ?? el.textContent?.trim().slice(0, 30) ?? el.tagName,
-        w: Math.round(r.width),
-        h: Math.round(r.height),
-        primary: el.hasAttribute("data-primary-action"),
-      };
-    });
-  });
-  for (const t of report) {
-    expect.soft(t.w, `largura de "${t.label}"`).toBeGreaterThanOrEqual(44);
-    expect.soft(t.h, `altura de "${t.label}"`).toBeGreaterThanOrEqual(44);
-    if (t.primary) {
-      expect.soft(t.h, `altura da ação principal "${t.label}"`).toBeGreaterThanOrEqual(56);
-      expect.soft(t.h, `altura da ação principal "${t.label}"`).toBeLessThanOrEqual(60);
-    }
-  }
-  expect(report.length).toBeGreaterThan(0);
-}
 
 test("areas de toque", async ({ page }) => {
   await fakeDetector(page);

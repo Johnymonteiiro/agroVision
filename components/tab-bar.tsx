@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Icon } from "@/components/icon";
 
 const TABS = [
-  { href: "/inicio", label: "Home", icon: "home" },
+  { href: "/", label: "Home", icon: "home" },
   { href: "/historico", label: "Histórico", icon: "history" },
   { href: "/analisar", label: "Analisar", icon: "photo_camera" },
   { href: "/animais", label: "Animais", icon: "sell" },
@@ -29,8 +29,9 @@ export function TabBar() {
           return (
             <li key={tab.href} className="flex justify-center">
               {tab.href === CENTER ? (
+                // "de" diz ao fluxo para onde "Cancelar" volta.
                 <Link
-                  href={tab.href}
+                  href={`${tab.href}?de=${encodeURIComponent(pathname)}`}
                   aria-label={tab.label}
                   aria-current={active ? "page" : undefined}
                   className="-mt-[26px] flex size-[62px] items-center justify-center rounded-full bg-primary text-white shadow-[0_0_0_5px_white,0_6px_16px_rgba(21,76,53,.35)]"

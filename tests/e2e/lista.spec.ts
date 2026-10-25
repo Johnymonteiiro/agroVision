@@ -5,9 +5,10 @@ test.beforeEach(async () => {
   await resetDb();
 });
 
-test("raiz redireciona para animais", async ({ page }) => {
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/animais$/);
+// C22 da F1 ("/ termina em /animais") foi substituído pela Home em "/" (fluxo-avaliacao C1).
+test("lista continua em /animais", async ({ page }) => {
+  await page.goto("/animais");
+  await expect(page.getByRole("heading", { name: "Animais" })).toBeVisible();
 });
 
 test("cabecalho da lista", async ({ page, request }) => {

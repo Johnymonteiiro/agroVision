@@ -80,6 +80,73 @@ export async function fillForm(
   if (v.sex) await page.getByRole("button", { name: v.sex }).click();
 }
 
+/** Todo botão, link e campo visível com pelo menos 44 × 44 px; ações principais entre 56 e 60 px de altura. */
+export async function assertTouchTargets(page: Page) {
+  const report = await page.evaluate(() => {
+    const els = [...document.querySelectorAll<HTMLElement>("a, button, input")].filter((el) => el.offsetParent !== null);
+    return els.map((el) => {
+      const r = el.getBoundingClientRect();
+      return {
+        label: el.getAttribute("aria-label") ?? el.textContent?.trim().slice(0, 30) ?? el.tagName,
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+        primary: el.hasAttribute("data-primary-action"),
+      };
+    });
+  });
+  for (const t of report) {
+    expect.soft(t.w, `largura de "${t.label}"`).toBeGreaterThanOrEqual(44);
+    expect.soft(t.h, `altura de "${t.label}"`).toBeGreaterThanOrEqual(44);
+    if (t.primary) {
+      expect.soft(t.h, `altura da ação principal "${t.label}"`).toBeGreaterThanOrEqual(56);
+      expect.soft(t.h, `altura da ação principal "${t.label}"`).toBeLessThanOrEqual(60);
+    }
+  }
+  expect(report.length).toBeGreaterThan(0);
+}
+
+type FakeModel = {
+  load?: "ready" | "pending" | "fail";
+  holdClassify?: boolean;
+  ready?: number;
+  notReady?: number;
+  version?: string;
+};
+
+/**
+ * Instala um classificador pelo gancho `window.__agroClassifier` (lib/evaluation/classifier.ts).
+ * O teste controla o carregamento (`__releaseModel`, `__failLoad`), a classificação (`__releaseClassify`)
+ * e as probabilidades devolvidas (`__probs`).
+ */
+export async function fakeClassifier(page: Page, m: FakeModel = {}) {
+  await page.addInitScript((m: FakeModel) => {
+    const w = window as unknown as Record<string, unknown>;
+    w.__failLoad = m.load === "fail";
+    w.__probs = { ready: m.ready ?? 0.914, notReady: m.notReady ?? 0.086 };
+    const classifier = {
+      model: { name: "CattleClassifier", version: m.version ?? "1.4.0", threshold: { READY: 0.85, NOT_READY: 0.85 } },
+      classify: () =>
+        new Promise((resolve) => {
+          const done = () => resolve(w.__probs);
+          if (m.holdClassify) w.__releaseClassify = done;
+          else done();
+        }),
+    };
+    w.__agroClassifier = () => {
+      if (w.__failLoad) return Promise.reject(new Error("falha simulada"));
+      if (m.load === "pending") return new Promise((resolve) => (w.__releaseModel = () => resolve(classifier)));
+      return Promise.resolve(classifier);
+    };
+  }, m);
+}
+
+/** Detector de enquadramento sem detecções, para a câmera não carregar o MediaPipe real. */
+export async function fakeDetector(page: Page) {
+  await page.addInitScript(() => {
+    (window as unknown as Record<string, unknown>).__gadoDetector = () => Promise.resolve({ detect: () => [] });
+  });
+}
+
 export const rgb = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;

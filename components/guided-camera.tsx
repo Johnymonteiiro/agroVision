@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/icon";
 import { POSITION_LABEL, photoCountLabel } from "@/lib/animals/format";
 import { loadDetector, type Detector } from "@/lib/camera/detector";
@@ -23,6 +23,12 @@ type Props = {
   needsNetwork: boolean;
   // Resolve quando a foto foi aceita; rejeitar mostra o erro de envio na revisão.
   onUse: (photo: CapturedPhoto) => Promise<void>;
+  // false esconde os chips de posição e de distância (câmera de avaliação, design 1c).
+  chips?: boolean;
+  // Mostra "Galeria" no controle esquerdo, no lugar do contador; a foto escolhida vai para quem chamou.
+  onGallery?: (file: File) => void;
+  // Texto da revisão quando a foto não vai para o dataset (design 1d).
+  review?: { question: string; actionLabel: string; actionIcon: string; notes: ReactNode };
 };
 type StreamState = "starting" | "live" | "denied" | "error";
 type DetectorState = "loading" | "ready" | "failed";
@@ -36,9 +42,10 @@ const FIRST_TIP: Record<Position, string> = {
 const DETECT_INTERVAL_MS = 200;
 const CANCEL_CLASS = "flex h-11 items-center gap-1.5 rounded-full bg-white/15 pl-3 pr-4 text-[15px] font-semibold";
 
-export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork, onUse }: Props) {
+export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork, onUse, chips = true, onGallery, review }: Props) {
   const online = useOnline();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<Detector | null>(null);
@@ -234,14 +241,16 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
       <p className="relative z-10 mx-6 mt-5 text-balance text-center text-[18px] font-semibold leading-[1.3]">
         Posicione o animal inteiro dentro da área
       </p>
-      <div className="relative z-10 mt-2 flex items-center justify-center gap-2 text-[13px] font-medium">
-        <span className="rounded-full bg-white/15 px-2.5 py-1" data-testid="camera-position">
-          {POSITION_LABEL[position]}
-        </span>
-        <span className="rounded-full bg-white/15 px-2.5 py-1" data-testid="min-distance">
-          {distance === null ? "Distância mínima: —" : `Distância mínima: ${formatDistance(distance)}`}
-        </span>
-      </div>
+      {chips && (
+        <div className="relative z-10 mt-2 flex items-center justify-center gap-2 text-[13px] font-medium">
+          <span className="rounded-full bg-white/15 px-2.5 py-1" data-testid="camera-position">
+            {POSITION_LABEL[position]}
+          </span>
+          <span className="rounded-full bg-white/15 px-2.5 py-1" data-testid="min-distance">
+            {distance === null ? "Distância mínima: —" : `Distância mínima: ${formatDistance(distance)}`}
+          </span>
+        </div>
+      )}
 
       <div ref={areaRef} className="relative mt-3 flex-1" data-testid="camera-area">
         <video
@@ -320,7 +329,30 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
       )}
 
       <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center px-7 pb-12 pt-5" data-testid="camera-controls">
-        {counter === undefined ? (
+        {onGallery ? (
+          <div className="flex flex-col items-start gap-1.5">
+            <button
+              type="button"
+              aria-label="Galeria"
+              onClick={() => galleryRef.current?.click()}
+              className="flex size-14 items-center justify-center rounded-[14px] bg-white/15"
+            >
+              <Icon name="photo_library" size={22} />
+            </button>
+            <span className="text-[12px] font-medium text-white/80">Galeria</span>
+            <input
+              ref={galleryRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) onGallery(file);
+              }}
+            />
+          </div>
+        ) : counter === undefined ? (
           <div />
         ) : (
           <div className="flex flex-col items-start gap-1.5">
@@ -357,51 +389,85 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
       </div>
 
       {captured && (
-        <section className="absolute inset-0 z-20 bg-camera" data-testid="review">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={captured.url} alt="Foto capturada" data-testid="review-photo" className="h-[66%] w-full object-cover" />
-          <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-[24px] bg-white px-5 pb-[34px] pt-6 text-ink">
-            <h2 className="mb-1 text-[22px] font-bold leading-[1.25] tracking-[-0.01em]">Esta foto está boa para o dataset?</h2>
-            <p className="flex items-center gap-2 text-[14px] text-muted" data-testid="review-info">
-              <span className="font-semibold text-ink-2">{POSITION_LABEL[position]}</span>·
-              <span>{FRAMING_UI[captured.framing].label}</span>
+        <PhotoReview
+          url={captured.url}
+          question={review?.question ?? "Esta foto está boa para o dataset?"}
+          info={
+            review ? undefined : (
+              <p className="flex items-center gap-2 text-[14px] text-muted" data-testid="review-info">
+                <span className="font-semibold text-ink-2">{POSITION_LABEL[position]}</span>·
+                <span>{FRAMING_UI[captured.framing].label}</span>
+              </p>
+            )
+          }
+          action={{
+            label: review ? review.actionLabel : uploading ? "Enviando..." : "Usar foto",
+            icon: review?.actionIcon ?? "check",
+            onClick: usePhoto,
+            disabled: blockedOffline || uploading,
+          }}
+          onRetake={discard}
+        >
+          {review?.notes}
+          {blockedOffline && (
+            <p className="flex items-center gap-2 text-[13px] text-muted">
+              <Icon name="cloud_off" size={18} />
+              Sem internet — conecte-se para enviar.
             </p>
-            <button
-              type="button"
-              data-primary-action
-              disabled={blockedOffline || uploading}
-              onClick={usePhoto}
-              className={`flex h-[60px] items-center justify-center gap-2.5 rounded-btn text-[18px] font-semibold ${
-                !blockedOffline && !uploading ? "bg-primary text-white" : "bg-disabled text-faint"
-              }`}
-            >
-              <Icon name="check" />
-              {uploading ? "Enviando..." : "Usar foto"}
-            </button>
-            <button
-              type="button"
-              data-primary-action
-              onClick={discard}
-              className="flex h-14 items-center justify-center gap-2.5 rounded-btn bg-primary-soft text-[17px] font-semibold text-primary-dark"
-            >
-              <Icon name="replay" size={22} />
-              Tirar outra foto
-            </button>
-            {blockedOffline && (
-              <p className="flex items-center gap-2 text-[13px] text-muted">
-                <Icon name="cloud_off" size={18} />
-                Sem internet — conecte-se para enviar.
-              </p>
-            )}
-            {uploadError && (
-              <p role="alert" className="flex items-center gap-2 text-[13px] font-medium text-error">
-                <Icon name="error" size={18} />
-                Não foi possível enviar a foto. Tente de novo.
-              </p>
-            )}
-          </div>
-        </section>
+          )}
+          {uploadError && (
+            <p role="alert" className="flex items-center gap-2 text-[13px] font-medium text-error">
+              <Icon name="error" size={18} />
+              Não foi possível enviar a foto. Tente de novo.
+            </p>
+          )}
+        </PhotoReview>
       )}
     </main>
+  );
+}
+
+type PhotoReviewProps = {
+  url: string;
+  question: string;
+  info?: ReactNode;
+  action: { label: string; icon: string; onClick: () => void; disabled?: boolean };
+  onRetake: () => void;
+  children?: ReactNode;
+};
+
+// Revisão da foto (design 1d / 2e): a foto em dois terços da tela e a folha branca com as ações.
+export function PhotoReview({ url, question, info, action, onRetake, children }: PhotoReviewProps) {
+  return (
+    <section className="absolute inset-0 z-20 bg-camera" data-testid="review">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="Foto capturada" data-testid="review-photo" className="h-[66%] w-full object-cover" />
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-[24px] bg-white px-5 pb-[34px] pt-6 text-ink">
+        <h2 className="mb-1 text-[22px] font-bold leading-[1.25] tracking-[-0.01em]">{question}</h2>
+        {info}
+        <button
+          type="button"
+          data-primary-action
+          disabled={action.disabled}
+          onClick={action.onClick}
+          className={`flex h-[60px] items-center justify-center gap-2.5 rounded-btn text-[18px] font-semibold ${
+            action.disabled ? "bg-disabled text-faint" : "bg-primary text-white"
+          }`}
+        >
+          <Icon name={action.icon} />
+          {action.label}
+        </button>
+        <button
+          type="button"
+          data-primary-action
+          onClick={onRetake}
+          className="flex h-14 items-center justify-center gap-2.5 rounded-btn bg-primary-soft text-[17px] font-semibold text-primary-dark"
+        >
+          <Icon name="replay" size={22} />
+          Tirar outra foto
+        </button>
+        {children}
+      </div>
+    </section>
   );
 }
