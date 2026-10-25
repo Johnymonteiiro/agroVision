@@ -2,14 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { Icon } from "@/components/icon";
-import { POSITION_LABEL, POSITION_SLUG, animalTitle, photoCountLabel } from "@/lib/animals/format";
+import { POSITION_LABEL, POSITION_OPTIONS, POSITION_SLUG, animalTitle, photoCountLabel } from "@/lib/animals/format";
 import { findAnimal, listImages } from "@/lib/animals/repo";
-
-const OPTIONS = [
-  { position: "REAR", icon: "u_turn_left", hint: "Traseira do animal, centralizada" },
-  { position: "TOP", icon: "vertical_align_bottom", hint: "Dorso visto de cima" },
-  { position: "SIDE", icon: "swap_horiz", hint: "Corpo inteiro, de lado" },
-] as const;
 
 export default async function EscolherPosicaoPage({ params }: PageProps<"/animais/[id]/fotos">) {
   const { id } = await params;
@@ -30,7 +24,7 @@ export default async function EscolherPosicaoPage({ params }: PageProps<"/animai
       <p className="mt-1.5 text-[16px] text-muted">Escolha antes de abrir a câmera. Cada posição aceita várias fotos.</p>
 
       <ul className="mt-5 flex flex-col gap-2.5">
-        {OPTIONS.map((o) => {
+        {POSITION_OPTIONS.map((o) => {
           const n = images.filter((img) => img.position === o.position).length;
           return (
             <li key={o.position}>

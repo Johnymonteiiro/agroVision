@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/icon";
 import { ageConversion, formatAge, type AgeUnit } from "@/lib/animals/age";
 import { CATEGORY_LABEL, SEX_LABEL } from "@/lib/animals/format";
 import { validateField, type AnimalField } from "@/lib/animals/validation";
 import { useOnline } from "@/lib/hooks/use-online";
+import { sendPhoto } from "@/lib/images/send-photo";
+import { PhotoField, type FormPhoto } from "./photo-field";
 
 type Category = keyof typeof CATEGORY_LABEL;
 type Sex = keyof typeof SEX_LABEL;
@@ -37,17 +39,22 @@ export function AnimalForm() {
   const router = useRouter();
   const online = useOnline();
   const [values, setValues] = useState<Values>(INITIAL);
+  const [photo, setPhoto] = useState<FormPhoto | null>(null);
   const [errors, setErrors] = useState<Partial<Record<AnimalField, string>>>({});
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Fixo por formulário: se a foto falhar depois do animal salvo, tentar de novo reaproveita o mesmo animal.
+  const animalId = useRef<string | null>(null);
 
   const filled = [
+    photo !== null,
     values.externalId.trim() !== "",
     values.category !== null,
     values.age.trim() !== "",
     values.weightKg.trim() !== "",
     values.sex !== null,
   ].filter(Boolean).length;
-  const complete = filled === 5;
+  const complete = filled === 6;
 
   function set<K extends keyof Values>(key: K, value: Values[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -69,11 +76,12 @@ export function AnimalForm() {
       if (msg) found[f] = msg;
     }
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
+    if (Object.keys(found).length > 0 || !photo) return;
 
     setSaving(true);
+    setPhotoError(null);
     try {
-      const id = crypto.randomUUID();
+      const id = (animalId.current ??= crypto.randomUUID());
       const res = await fetch("/api/animals", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -87,12 +95,19 @@ export function AnimalForm() {
           weightKg: toNumber(values.weightKg),
         }),
       });
-      if (res.ok) {
-        router.push(`/animais/${id}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setErrors(body.fields ?? { externalId: "Não foi possível salvar. Tente de novo." });
         return;
       }
-      const body = await res.json().catch(() => ({}));
-      setErrors(body.fields ?? { externalId: "Não foi possível salvar. Tente de novo." });
+      try {
+        await sendPhoto(id, toNumber(values.weightKg), photo);
+      } catch (error) {
+        console.error("envio da foto do cadastro falhou", error);
+        setPhotoError("O animal foi salvo, mas a foto não foi enviada. Toque em Salvar animal para tentar de novo.");
+        return;
+      }
+      router.push(`/animais/${id}`);
     } finally {
       setSaving(false);
     }
@@ -109,6 +124,8 @@ export function AnimalForm() {
   };
 
   const canSave = complete && online && !saving;
+  const weightNumber = toNumber(values.weightKg);
+  const cameraWeight = validateField("weightKg", weightNumber) ? null : weightNumber;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col">
@@ -121,6 +138,18 @@ export function AnimalForm() {
       </header>
 
       <div className="flex flex-col gap-5 px-4 pb-6 pt-3" data-testid="form-fields">
+        <Field label="Foto do animal" error={photoError ?? undefined} testId="field-photo">
+          <PhotoField
+            photo={photo}
+            onChange={(next) => {
+              setPhoto(next);
+              setPhotoError(null);
+            }}
+            weightKg={cameraWeight}
+            invalid={photoError !== null && photo === null}
+          />
+        </Field>
+
         <Field label="Identificação" error={errors.externalId} testId="field-externalId">
           <div
             className={`flex h-14 items-center gap-2.5 rounded-btn border bg-white px-3.5 focus-within:border-[1.5px] focus-within:border-primary focus-within:shadow-[0_0_0_4px_#EAF5EF] ${
@@ -175,7 +204,7 @@ export function AnimalForm() {
         </Field>
 
         <Field label="Idade" error={errors.age} testId="field-age">
-          <div className="grid grid-cols-[1fr_170px] gap-2.5">
+          <div className="grid grid-cols-[minmax(0,1fr)_170px] gap-2.5">
             <div className={`flex h-14 items-center gap-2 rounded-btn border bg-white px-3.5 ${errors.age ? "border-[1.5px] border-[#C74A3A]" : "border-line"}`}>
               <input
                 aria-label="Idade"
@@ -251,7 +280,12 @@ export function AnimalForm() {
           data-testid="card-preview"
           className="flex items-center gap-3 rounded-card bg-white p-3 shadow-[0_1px_2px_rgba(23,33,28,.04),0_4px_16px_rgba(23,33,28,.04)]"
         >
-          <div className="placeholder-stripes size-14 flex-none rounded-[12px]" />
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photo.url} alt="" className="size-14 flex-none rounded-[12px] object-cover" />
+          ) : (
+            <div className="placeholder-stripes size-14 flex-none rounded-[12px]" />
+          )}
           <div>
             <div className="mb-0.5 font-mono text-[11px] font-medium text-muted">PRÉVIA DO CARD</div>
             <div className="text-[16px] font-bold">{preview.title}</div>
@@ -264,11 +298,11 @@ export function AnimalForm() {
       <footer className="sticky bottom-0 mt-auto border-t border-line bg-white px-4 pb-[34px] pt-3">
         {complete ? (
           <p className="mb-2.5 flex items-center gap-1.5 text-[13px] font-medium text-ready" data-testid="filled-counter">
-            <Icon name="check_circle" size={16} />5 de 5 preenchidos
+            <Icon name="check_circle" size={16} />6 de 6 preenchidos
           </p>
         ) : (
           <p className="mb-2.5 text-[13px] font-medium text-muted" data-testid="filled-counter">
-            {filled} de 5 preenchidos
+            {filled} de 6 preenchidos
           </p>
         )}
         {!online && (

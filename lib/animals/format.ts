@@ -5,6 +5,13 @@ export const SEX_LABEL = { MALE: "Macho", FEMALE: "Fêmea" } as const;
 export const POSITION_LABEL = { REAR: "De trás", TOP: "De cima", SIDE: "Lateral" } as const;
 export const POSITION_ORDER = ["SIDE", "REAR", "TOP"] as const;
 
+// Escolha da posição antes da foto, na tela "Qual posição?" e no cadastro.
+export const POSITION_OPTIONS = [
+  { position: "REAR", icon: "u_turn_left", hint: "Traseira do animal, centralizada" },
+  { position: "TOP", icon: "vertical_align_bottom", hint: "Dorso visto de cima" },
+  { position: "SIDE", icon: "swap_horiz", hint: "Corpo inteiro, de lado" },
+] as const;
+
 export const POSITION_SLUG = { REAR: "de-tras", TOP: "de-cima", SIDE: "lateral" } as const;
 export function positionFromSlug(slug: string) {
   const entry = Object.entries(POSITION_SLUG).find(([, s]) => s === slug);

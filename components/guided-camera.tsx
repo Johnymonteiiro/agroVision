@@ -7,13 +7,26 @@ import { POSITION_LABEL, photoCountLabel } from "@/lib/animals/format";
 import { loadDetector, type Detector } from "@/lib/camera/detector";
 import { FRAMING_UI, classifyFraming, type Framing } from "@/lib/camera/framing";
 import { guideRect } from "@/lib/camera/guide-rect";
-import { DEFAULT_HFOV_DEG, formatDistance, minDistance, roundUpDistance, type Position } from "@/lib/camera/min-distance";
+import { DEFAULT_HFOV_DEG, formatDistance, minDistance, type Position } from "@/lib/camera/min-distance";
 import { useOnline } from "@/lib/hooks/use-online";
 
-type Props = { animalId: string; weightKg: number; position: Position; initialCount: number };
+export type CapturedPhoto = { blob: Blob; framing: Framing; capturedAt: string; width: number; height: number };
+
+type Props = {
+  position: Position;
+  // Sem peso (cadastro ainda incompleto) a câmera mostra só o enquadramento.
+  weightKg: number | null;
+  cancel: { href: string } | { onClick: () => void };
+  // Fotos já guardadas nesta posição; sem valor, o contador some.
+  counter?: number;
+  // "Usar foto" depende da rede quando a foto é enviada na hora.
+  needsNetwork: boolean;
+  // Resolve quando a foto foi aceita; rejeitar mostra o erro de envio na revisão.
+  onUse: (photo: CapturedPhoto) => Promise<void>;
+};
 type StreamState = "starting" | "live" | "denied" | "error";
 type DetectorState = "loading" | "ready" | "failed";
-type Captured = { blob: Blob; url: string; framing: Framing; capturedAt: string; minDistanceM: number };
+type Captured = CapturedPhoto & { url: string };
 
 const FIRST_TIP: Record<Position, string> = {
   REAR: "Fotografe por trás",
@@ -21,8 +34,9 @@ const FIRST_TIP: Record<Position, string> = {
   SIDE: "Fotografe de lado",
 };
 const DETECT_INTERVAL_MS = 200;
+const CANCEL_CLASS = "flex h-11 items-center gap-1.5 rounded-full bg-white/15 pl-3 pr-4 text-[15px] font-semibold";
 
-export function CameraCapture({ animalId, weightKg, position, initialCount }: Props) {
+export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork, onUse }: Props) {
   const online = useOnline();
   const videoRef = useRef<HTMLVideoElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
@@ -36,7 +50,6 @@ export function CameraCapture({ animalId, weightKg, position, initialCount }: Pr
   const [frame, setFrame] = useState<{ w: number; h: number } | null>(null);
   const [area, setArea] = useState<{ w: number; h: number } | null>(null);
   const [captured, setCaptured] = useState<Captured | null>(null);
-  const [count, setCount] = useState(initialCount);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(false);
   const [showTips, setShowTips] = useState(true);
@@ -133,12 +146,15 @@ export function CameraCapture({ animalId, weightKg, position, initialCount }: Pr
     detector === "failed" ? "UNAVAILABLE" : detector === "loading" ? null : framing;
   const ui = shownFraming ? FRAMING_UI[shownFraming] : null;
   const cornerColor = ui?.color ?? "#FFFFFF";
-  const distance = frame ? minDistance({ position, weightKg, frameWidth: frame.w, frameHeight: frame.h, hfovDeg: DEFAULT_HFOV_DEG }) : null;
+  const distance =
+    frame && weightKg !== null
+      ? minDistance({ position, weightKg, frameWidth: frame.w, frameHeight: frame.h, hfovDeg: DEFAULT_HFOV_DEG })
+      : null;
   const rect = frame && area ? guideRect({ frameWidth: frame.w, frameHeight: frame.h, viewWidth: area.w, viewHeight: area.h }) : null;
 
   function capture() {
     const video = videoRef.current;
-    if (!video || !video.videoWidth || distance === null) return;
+    if (!video || !video.videoWidth) return;
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -154,7 +170,8 @@ export function CameraCapture({ animalId, weightKg, position, initialCount }: Pr
           url: URL.createObjectURL(blob),
           framing: framingAtCapture,
           capturedAt: new Date().toISOString(),
-          minDistanceM: roundUpDistance(distance),
+          width: canvas.width,
+          height: canvas.height,
         });
       },
       "image/jpeg",
@@ -167,21 +184,13 @@ export function CameraCapture({ animalId, weightKg, position, initialCount }: Pr
     setCaptured(null);
   }
 
-  async function sendPhoto() {
+  async function usePhoto() {
     if (!captured) return;
     setUploading(true);
     setUploadError(false);
     try {
-      const form = new FormData();
-      form.set("file", captured.blob, "foto.jpg");
-      form.set("imageId", crypto.randomUUID());
-      form.set("position", position);
-      form.set("framing", captured.framing);
-      form.set("minDistanceM", String(captured.minDistanceM));
-      form.set("capturedAt", captured.capturedAt);
-      const res = await fetch(`/api/animals/${animalId}/images`, { method: "POST", body: form });
-      if (!res.ok) throw new Error(`upload ${res.status}`);
-      setCount((n) => n + 1);
+      const { blob, framing: shot, capturedAt, width, height } = captured;
+      await onUse({ blob, framing: shot, capturedAt, width, height });
       discard();
     } catch (error) {
       console.error("envio da foto falhou", error);
@@ -191,19 +200,24 @@ export function CameraCapture({ animalId, weightKg, position, initialCount }: Pr
     }
   }
 
+  const blockedOffline = needsNetwork && !online;
   const tips = [FIRST_TIP[position], "Boa iluminação", "Só um animal", "Corpo inteiro"];
   const tipIcons = ["swap_horiz", "wb_sunny", "filter_1", "open_in_full"];
 
   return (
     <main className="relative mx-auto flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-camera text-white" data-testid="camera-screen">
       <div className="relative z-10 flex items-center justify-between px-4 pt-3" data-testid="camera-top">
-        <Link
-          href={`/animais/${animalId}`}
-          className="flex h-11 items-center gap-1.5 rounded-full bg-white/15 pl-3 pr-4 text-[15px] font-semibold"
-        >
-          <Icon name="close" size={22} />
-          Cancelar
-        </Link>
+        {"href" in cancel ? (
+          <Link href={cancel.href} className={CANCEL_CLASS}>
+            <Icon name="close" size={22} />
+            Cancelar
+          </Link>
+        ) : (
+          <button type="button" onClick={cancel.onClick} className={CANCEL_CLASS}>
+            <Icon name="close" size={22} />
+            Cancelar
+          </button>
+        )}
         {online ? (
           <span className="flex h-8 items-center gap-1.5 rounded-full bg-white/15 px-2.5 text-[12px] font-medium" data-testid="connection-chip">
             <span className="size-2 rounded-full bg-guide" />
@@ -306,14 +320,18 @@ export function CameraCapture({ animalId, weightKg, position, initialCount }: Pr
       )}
 
       <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center px-7 pb-12 pt-5" data-testid="camera-controls">
-        <div className="flex flex-col items-start gap-1.5">
-          <div className="flex size-14 items-center justify-center rounded-[14px] bg-white/15 text-[20px] font-bold" data-testid="photo-counter">
-            {count}
+        {counter === undefined ? (
+          <div />
+        ) : (
+          <div className="flex flex-col items-start gap-1.5">
+            <div className="flex size-14 items-center justify-center rounded-[14px] bg-white/15 text-[20px] font-bold" data-testid="photo-counter">
+              {counter}
+            </div>
+            <span className="text-[12px] font-medium text-white/80" data-testid="photo-counter-label">
+              {photoCountLabel(counter)}
+            </span>
           </div>
-          <span className="text-[12px] font-medium text-white/80" data-testid="photo-counter-label">
-            {photoCountLabel(count)}
-          </span>
-        </div>
+        )}
         <button
           type="button"
           aria-label="Tirar foto"
@@ -351,10 +369,10 @@ export function CameraCapture({ animalId, weightKg, position, initialCount }: Pr
             <button
               type="button"
               data-primary-action
-              disabled={!online || uploading}
-              onClick={sendPhoto}
+              disabled={blockedOffline || uploading}
+              onClick={usePhoto}
               className={`flex h-[60px] items-center justify-center gap-2.5 rounded-btn text-[18px] font-semibold ${
-                online && !uploading ? "bg-primary text-white" : "bg-disabled text-faint"
+                !blockedOffline && !uploading ? "bg-primary text-white" : "bg-disabled text-faint"
               }`}
             >
               <Icon name="check" />
@@ -369,7 +387,7 @@ export function CameraCapture({ animalId, weightKg, position, initialCount }: Pr
               <Icon name="replay" size={22} />
               Tirar outra foto
             </button>
-            {!online && (
+            {blockedOffline && (
               <p className="flex items-center gap-2 text-[13px] text-muted">
                 <Icon name="cloud_off" size={18} />
                 Sem internet — conecte-se para enviar.
