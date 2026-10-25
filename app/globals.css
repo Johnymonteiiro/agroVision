@@ -20,6 +20,9 @@
   --color-warn: #e8a93a;
   --color-guide: #7fd1a3;
   --color-camera: #0e1310;
+  /* Marca: o boi e a linha do scanner de app/loader.svg. */
+  --color-brand: #01391e;
+  --color-scan: #6fe01f;
 
   --radius-chip: 12px;
   --radius-btn: 14px;
