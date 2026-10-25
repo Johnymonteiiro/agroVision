@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# env
+.env
+.env.*
+!.env.example
+
+# playwright
+/test-results/
+/playwright-report/
+
+# mediapipe runtime (copiado de node_modules por scripts/copy-mediapipe.mjs)
+/public/mediapipe/wasm/

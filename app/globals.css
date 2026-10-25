@@ -1,26 +1,52 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Tokens do design system (Gado Certo - Telas, 1o / 1p). */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-primary: #1f6b45;
+  --color-primary-dark: #154c35;
+  --color-primary-soft: #eaf5ef;
+  --color-bg: #f6f8f7;
+  --color-ink: #17211c;
+  --color-ink-2: #3c4641;
+  --color-muted: #68736d;
+  --color-faint: #9aa39e;
+  --color-line: #dde4e0;
+  --color-line-soft: #eef1ef;
+  --color-disabled: #eef0ef;
+  --color-error: #b23e2f;
+  --color-ready: #18864b;
+  --color-ready-soft: #e3f3ea;
+  --color-ready-ink: #136b3c;
+  --color-warn: #e8a93a;
+  --color-guide: #7fd1a3;
+  --color-camera: #0e1310;
+
+  --radius-chip: 12px;
+  --radius-btn: 14px;
+  --radius-card: 16px;
+  --radius-card-lg: 20px;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.material-symbols-rounded {
+  font-size: 24px;
+  line-height: 1;
+  user-select: none;
+}
+
+.icon-fill {
+  font-variation-settings: "FILL" 1;
+}
+
+.placeholder-stripes {
+  background: repeating-linear-gradient(135deg, #d9e2dc 0 8px, #e3eae5 8px 16px);
 }
