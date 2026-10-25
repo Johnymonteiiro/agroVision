@@ -30,6 +30,19 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* O preflight do Tailwind v4 deixa os botões com cursor default; tudo que é clicável usa pointer. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  summary,
+  select:not(:disabled),
+  label:has(> input:is([type="checkbox"], [type="radio"]):not(:disabled)),
+  input:is([type="checkbox"], [type="radio"], [type="file"], [type="submit"], [type="button"]):not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-ink);

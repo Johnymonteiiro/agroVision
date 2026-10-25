@@ -51,3 +51,6 @@ next-env.d.ts
 
 # mediapipe runtime (copiado de node_modules por scripts/copy-mediapipe.mjs)
 /public/mediapipe/wasm/
+
+# playwright mcp
+.playwright-mcp/
