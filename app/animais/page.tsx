@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Icon } from "@/components/icon";
+import { InstallBanner } from "@/components/install-banner";
 import { animalSummary, formatWhen } from "@/lib/animals/format";
 import { listAnimals } from "@/lib/animals/repo";
 import { AnimalsList, type AnimalRow } from "./animals-list";
@@ -39,6 +40,8 @@ export default async function AnimaisPage() {
           Adicionar animal
         </Link>
       </header>
+
+      <InstallBanner />
 
       {rows.length === 0 ? (
         <section className="mx-4 mt-6 flex flex-col items-center rounded-card-lg bg-white px-5 py-6 text-center shadow-[0_0_0_1px_rgba(0,0,0,.06)]">

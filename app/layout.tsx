@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gado Certo",
+  title: "AgroVision",
   description: "Cadastro de bovinos e fotos para o dataset",
+  appleWebApp: { capable: true, title: "AgroVision", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -25,6 +26,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <head>
+        {/* Fora do Metadata API, que não deixa escolher o crossOrigin do manifest (ver app/app.webmanifest/route.ts). */}
+        <link rel="manifest" href="/app.webmanifest" crossOrigin="use-credentials" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
