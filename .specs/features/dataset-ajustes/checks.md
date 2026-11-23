@@ -206,3 +206,14 @@ Novos: grade e visualizador de fotos, menu, rotas da imagem da categoria, `ajust
 Total ≈ 131 KB ÷ 4 ≈ 33k.
 
 - S1-S4 = 33k, under the 150k budget - one builder
+
+- **Boundary:** código e testes escritos (feature base `4b544c3`). `pnpm typecheck` e `pnpm lint` limpos, incluindo as fronteiras de módulo. A `0004` gerada pelo drizzle-kit tem só `ADD COLUMN "image_key" text`. Smoke manual no `pnpm dev`, depois de reiniciado para aplicar a `0004`:
+  - `/`, `/dataset`, `/dataset/novo`, `/dataset/categorias/nova` e `/animais` respondem 200;
+  - `DELETE /api/images/<uuid sem foto>` responde 404;
+  - `GET /api/categories/<Taurino>/image` responde 404 (sem imagem).
+
+  **Nenhuma prova rodada**: o usuário não autorizou testes nesta feature, e por isso o Verifier também não foi despachado
+- **Settled mid-build:**
+  - o cadastro de categoria fica em `/dataset/categorias/nova`, aberto pelo menu "Novo cadastro" › "Categoria" (decisão do usuário; o "+ Nova" no formulário não existe);
+  - o teste "lista de categorias" (F1b C33) saiu com a seção.
+- **Abandoned:** nenhum
