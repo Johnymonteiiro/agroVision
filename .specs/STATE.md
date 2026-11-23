@@ -12,8 +12,8 @@
 
 **Feature**: dataset-rotulos
 **Where**: C1-C58 fechados em `6d579ef`; unit 74, integration 38 e E2E 156 verdes
-**In progress**: verificação independente (Verifier) sobre `0ead62c..HEAD`
-**Next step**: ler `verification.md`; se FAIL, fechar os gaps e pedir uma rodada escopada
+**In progress**: nada. O Verifier sobre `0ead62c..HEAD` foi interrompido a pedido do usuário ("Pare de rodar os testes"); `verification.md` não existe
+**Next step**: quando o usuário autorizar, despachar o Verifier (ele roda todas as provas e injeta falhas); até lá a F1b não está verificada
 **Blockers**: none
 **Uncommitted**: none
 **Branch**: feat/dataset-rotulos
