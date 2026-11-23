@@ -1,9 +1,16 @@
 import { ageInMonths, formatAge, formatAgeShort } from "./age";
 
-export const CATEGORY_LABEL = { TAURINE: "Taurino", ZEBU: "Zebu" } as const;
 export const SEX_LABEL = { MALE: "Macho", FEMALE: "Fêmea" } as const;
+export const READINESS_LABEL = { READY: "Pronto", NOT_READY: "Não pronto" } as const;
 export const POSITION_LABEL = { REAR: "De trás", TOP: "De cima", SIDE: "Lateral" } as const;
 export const POSITION_ORDER = ["SIDE", "REAR", "TOP"] as const;
+
+// Escolha da posição antes da foto, na tela "Qual posição?" e no cadastro.
+export const POSITION_OPTIONS = [
+  { position: "REAR", icon: "u_turn_left", hint: "Traseira do animal, centralizada" },
+  { position: "TOP", icon: "vertical_align_bottom", hint: "Dorso visto de cima" },
+  { position: "SIDE", icon: "swap_horiz", hint: "Corpo inteiro, de lado" },
+] as const;
 
 export const POSITION_SLUG = { REAR: "de-tras", TOP: "de-cima", SIDE: "lateral" } as const;
 export function positionFromSlug(slug: string) {
@@ -13,7 +20,7 @@ export function positionFromSlug(slug: string) {
 
 type AnimalLike = {
   externalId: string;
-  category: keyof typeof CATEGORY_LABEL;
+  categoryName: string;
   sex: keyof typeof SEX_LABEL;
   birthDateEstimated: string;
   weightKg: number;
@@ -28,7 +35,7 @@ export function animalSummary(animal: AnimalLike, now: Date = new Date()) {
   const months = ageInMonths(animal.birthDateEstimated, now);
   return {
     title: animalTitle(animal.externalId),
-    line1: `${CATEGORY_LABEL[animal.category]} • ${SEX_LABEL[animal.sex]}`,
+    line1: `${animal.categoryName} • ${SEX_LABEL[animal.sex]}`,
     line2: `${formatAge(months)} • ${animal.weightKg} kg`,
     ageShort: formatAgeShort(months),
   };
@@ -36,6 +43,10 @@ export function animalSummary(animal: AnimalLike, now: Date = new Date()) {
 
 export function photoCountLabel(n: number) {
   return n === 1 ? "1 foto" : `${n} fotos`;
+}
+
+export function animalCountLabel(n: number) {
+  return n === 1 ? "1 animal" : `${n} animais`;
 }
 
 const TIME_ZONE = "America/Sao_Paulo";

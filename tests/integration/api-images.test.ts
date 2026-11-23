@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { count, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { POST } from "@/app/api/animals/[id]/images/route";
+import { PUT as putReadiness } from "@/app/api/animals/[id]/readiness/route";
 import { GET } from "@/app/api/images/[id]/route";
 import { getDb } from "@/lib/db/client";
 import { animalImages } from "@/lib/db/schema";
@@ -25,6 +26,15 @@ const upload = (animalId: string, form: FormData) =>
   });
 const read = (id: string, variant: string) =>
   GET(new Request(`http://test/api/images/${id}?variant=${variant}`), { params: Promise.resolve({ id }) });
+const changeReadiness = (animalId: string, body: unknown) =>
+  putReadiness(
+    new Request(`http://test/api/animals/${animalId}/readiness`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+    { params: Promise.resolve({ id: animalId }) },
+  );
 const rowCount = async () => (await getDb().select({ n: count() }).from(animalImages))[0].n;
 const jpegBlob = (buf: Buffer) => new Blob([new Uint8Array(buf)], { type: "image/jpeg" });
 
@@ -70,11 +80,28 @@ describe("POST /api/animals/{id}/images", () => {
   });
 
   it("chaves no bucket por animal, posicao e imagem", async () => {
-    const animal = await createAnimal();
-    const { form, imageId } = uploadForm(jpegBlob(jpeg4000x3000), { position: "SIDE" });
-    expect((await upload(animal.id, form)).status).toBe(201);
-    expect(await objectExists(`animals/${animal.id}/SIDE/${imageId}.jpg`)).toBe(true);
-    expect(await objectExists(`animals/${animal.id}/SIDE/${imageId}_thumb.webp`)).toBe(true);
+    for (const readiness of ["READY", "NOT_READY"]) {
+      const animal = await createAnimal({ readiness });
+      const { form, imageId } = uploadForm(jpegBlob(jpeg4000x3000), { position: "SIDE" });
+      expect((await upload(animal.id, form)).status).toBe(201);
+      const [row] = await getDb().select().from(animalImages).where(eq(animalImages.id, imageId));
+      expect(row.objectKey).toBe(`animals/${animal.id}/SIDE/${imageId}.jpg`);
+      expect(row.thumbKey).toBe(`animals/${animal.id}/SIDE/${imageId}_thumb.webp`);
+      expect(await objectExists(`animals/${animal.id}/SIDE/${imageId}.jpg`)).toBe(true);
+      expect(await objectExists(`animals/${animal.id}/SIDE/${imageId}_thumb.webp`)).toBe(true);
+    }
+  });
+
+  it("linha com o rotulo da captura", async () => {
+    const animal = await createAnimal({ readiness: "NOT_READY" });
+    const first = uploadForm(jpegBlob(jpeg4000x3000));
+    expect((await upload(animal.id, first.form)).status).toBe(201);
+    expect((await changeReadiness(animal.id, { readiness: "READY", scope: "FROM_NOW" })).status).toBe(200);
+    const second = uploadForm(jpegBlob(jpeg4000x3000));
+    expect((await upload(animal.id, second.form)).status).toBe(201);
+    const rows = await getDb().select().from(animalImages);
+    expect(rows.find((r) => r.id === first.imageId)?.readinessAtCapture).toBe("NOT_READY");
+    expect(rows.find((r) => r.id === second.imageId)?.readinessAtCapture).toBe("READY");
   });
 
   it("linha com snapshots do animal", async () => {

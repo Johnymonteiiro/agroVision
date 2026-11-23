@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { sql } from "drizzle-orm";
 import { POST as postAnimal } from "@/app/api/animals/route";
+import { SEED_CATEGORY_IDS, TAURINO_ID } from "@/lib/categories/seed";
 import { getDb } from "@/lib/db/client";
 import { createMinioClient } from "@/lib/storage/object-store";
 
@@ -10,13 +11,17 @@ export const BUCKET = "animal-images";
 
 export async function resetDb() {
   await getDb().execute(sql`truncate table animal_images, animals`);
+  await getDb().execute(
+    sql`delete from categories where id not in (${sql.join(SEED_CATEGORY_IDS.map((id) => sql`${id}::uuid`), sql`, `)})`,
+  );
 }
 
 export function animalBody(overrides: Record<string, unknown> = {}) {
   return {
     id: randomUUID(),
     externalId: `T${Math.floor(Math.random() * 1e8)}`,
-    category: "TAURINE",
+    categoryId: TAURINO_ID,
+    readiness: "NOT_READY",
     sex: "MALE",
     age: 24,
     ageUnit: "MONTHS",

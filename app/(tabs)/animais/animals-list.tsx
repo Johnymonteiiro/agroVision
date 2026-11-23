@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/icon";
+import { ReadinessBadge } from "@/components/readiness-badge";
+import { matchesFilter, type FilterSpec } from "@/lib/animals/filters";
+import type { Readiness } from "@/lib/db/schema";
 
 export type AnimalRow = {
   id: string;
   externalId: string;
-  category: "TAURINE" | "ZEBU";
+  categoryId: string;
+  readiness: Readiness;
   sex: "MALE" | "FEMALE";
   title: string;
   line1: string;
@@ -17,21 +21,14 @@ export type AnimalRow = {
   thumbUrl: string | null;
 };
 
-const CHIPS = [
-  { key: "ALL", label: "Todos", match: () => true },
-  { key: "TAURINE", label: "Taurino", match: (r: AnimalRow) => r.category === "TAURINE" },
-  { key: "ZEBU", label: "Zebu", match: (r: AnimalRow) => r.category === "ZEBU" },
-  { key: "MALE", label: "Machos", match: (r: AnimalRow) => r.sex === "MALE" },
-  { key: "FEMALE", label: "Fêmeas", match: (r: AnimalRow) => r.sex === "FEMALE" },
-] as const;
-
-export function AnimalsList({ rows }: { rows: AnimalRow[] }) {
+// Lista das abas Animais e Dataset; cada aba passa os seus filtros (lib/animals/filters.ts).
+export function AnimalsList({ rows, filters }: { rows: AnimalRow[]; filters: FilterSpec[] }) {
   const [query, setQuery] = useState("");
-  const [chip, setChip] = useState<(typeof CHIPS)[number]["key"]>("ALL");
+  const [chip, setChip] = useState(filters[0]?.key ?? "ALL");
 
   const q = query.trim().toLowerCase();
-  const active = CHIPS.find((c) => c.key === chip)!;
-  const visible = rows.filter((r) => active.match(r) && r.externalId.toLowerCase().includes(q));
+  const active = filters.find((c) => c.key === chip) ?? filters[0];
+  const visible = rows.filter((r) => (!active || matchesFilter(r, active)) && r.externalId.toLowerCase().includes(q));
 
   return (
     <>
@@ -48,7 +45,7 @@ export function AnimalsList({ rows }: { rows: AnimalRow[] }) {
       </label>
 
       <div className="flex gap-2 overflow-x-auto px-4 pt-2" role="group" aria-label="Filtros">
-        {CHIPS.map((c) => {
+        {filters.map((c) => {
           const on = c.key === chip;
           return (
             <button
@@ -96,7 +93,10 @@ export function AnimalsList({ rows }: { rows: AnimalRow[] }) {
                       </span>
                     )}
                   </div>
-                  <p className="mt-[3px] text-[14px] font-medium text-ink-2">{r.line1}</p>
+                  <div className="mt-[3px] flex items-center gap-2">
+                    <p className="min-w-0 truncate text-[14px] font-medium text-ink-2">{r.line1}</p>
+                    <ReadinessBadge readiness={r.readiness} />
+                  </div>
                   <p className="text-[14px] text-muted">{r.line2}</p>
                   {r.lastPhoto && <p className="mt-[3px] text-[12px] text-muted">Última foto: {r.lastPhoto}</p>}
                 </div>

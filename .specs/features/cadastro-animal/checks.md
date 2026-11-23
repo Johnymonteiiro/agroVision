@@ -107,6 +107,7 @@ Done: yes
 **C22** - Abrir `/` termina em `/animais` (AC 21)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "raiz redireciona"`
 Done: yes
+Superseded: 2026-10-25 por `fluxo-avaliacao` C1 - `/` passou a ser a Home (plano aprovado, `Impact`); o teste virou "lista continua em /animais"
 
 **C23** - Com 2 animais, `/animais` mostra "Animais", "2 cadastrados" e "Adicionar animal", que abre `/animais/novo` (AC 22)
 Proof: `pnpm playwright test tests/e2e/lista.spec.ts -g "cabecalho da lista"`

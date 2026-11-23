@@ -97,6 +97,8 @@ export async function uploadAnimalImage(
     bytes: photo.full.length,
     weightKgAtCapture: animal.weightKg,
     ageMonthsAtCapture: ageInMonths(animal.birthDateEstimated, capturedAt),
+    // Rótulo do momento da captura; mudar o animal depois não regrava esta foto (AD-001).
+    readinessAtCapture: animal.readiness,
     objectKey,
     thumbKey,
   };

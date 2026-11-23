@@ -9,6 +9,9 @@ export async function POST(request: Request) {
   }
 
   const result = await createAnimal(parsed.data);
+  if (result.status === "unknown_category") {
+    return Response.json({ error: "invalid", fields: { categoryId: MESSAGES.categoryId } }, { status: 422 });
+  }
   if (result.status === "duplicate") {
     return Response.json(
       { error: "duplicate", fields: { externalId: MESSAGES.duplicate } },

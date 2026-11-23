@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createAnimal, fillForm, resetDb, rgb } from "./helpers";
+import { assertTouchTargets, createAnimal, fillForm, resetDb, rgb } from "./helpers";
 
 async function fakeDetector(page: Page) {
   await page.addInitScript(() => {
@@ -37,43 +37,19 @@ test("fontes servidas localmente", async ({ page }) => {
     if (/fonts\.googleapis\.com|fonts\.gstatic\.com/.test(r.url())) external.push(r.url());
   });
   await fakeDetector(page);
-  for (const path of ["/animais", "/animais/novo", `/animais/${animalId}`, `/animais/${animalId}/fotos`, `/animais/${animalId}/fotos/lateral`]) {
+  for (const path of ["/animais", "/dataset/novo", `/animais/${animalId}`, `/animais/${animalId}/fotos`, `/animais/${animalId}/fotos/lateral`]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
   }
   expect(external).toEqual([]);
 });
 
-async function assertTouchTargets(page: Page) {
-  const report = await page.evaluate(() => {
-    const els = [...document.querySelectorAll<HTMLElement>("a, button, input")].filter((el) => el.offsetParent !== null);
-    return els.map((el) => {
-      const r = el.getBoundingClientRect();
-      return {
-        label: el.getAttribute("aria-label") ?? el.textContent?.trim().slice(0, 30) ?? el.tagName,
-        w: Math.round(r.width),
-        h: Math.round(r.height),
-        primary: el.hasAttribute("data-primary-action"),
-      };
-    });
-  });
-  for (const t of report) {
-    expect.soft(t.w, `largura de "${t.label}"`).toBeGreaterThanOrEqual(44);
-    expect.soft(t.h, `altura de "${t.label}"`).toBeGreaterThanOrEqual(44);
-    if (t.primary) {
-      expect.soft(t.h, `altura da ação principal "${t.label}"`).toBeGreaterThanOrEqual(56);
-      expect.soft(t.h, `altura da ação principal "${t.label}"`).toBeLessThanOrEqual(60);
-    }
-  }
-  expect(report.length).toBeGreaterThan(0);
-}
-
 test("areas de toque", async ({ page }) => {
   await fakeDetector(page);
   await page.goto("/animais");
   await assertTouchTargets(page);
-  await page.goto("/animais/novo");
-  await fillForm(page, { externalId: "77", category: "Taurino", age: "24", weight: "485", sex: "Macho" });
+  await page.goto("/dataset/novo");
+  await fillForm(page, { externalId: "77", category: "Taurino", readiness: "Pronto", age: "24", weight: "485", sex: "Macho" });
   await assertTouchTargets(page);
   await page.goto(`/animais/${animalId}`);
   await assertTouchTargets(page);

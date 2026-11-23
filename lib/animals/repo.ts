@@ -1,22 +1,34 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { count, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { getDb, type Db } from "@/lib/db/client";
-import { uniqueViolation } from "@/lib/db/errors";
-import { animalImages, animals, type Animal, type AnimalImage } from "@/lib/db/schema";
+import { foreignKeyViolation, uniqueViolation } from "@/lib/db/errors";
+import { animalImages, animals, categories, type Animal, type AnimalImage, type Readiness } from "@/lib/db/schema";
 import { birthDateFromAge } from "./age";
-import type { NewAnimal } from "./validation";
+import type { NewAnimal, ReadinessChange } from "./validation";
+
+export type AnimalWithCategory = Animal & { categoryName: string };
 
 export type CreateResult =
   | { status: "created"; animal: Animal }
   | { status: "existing"; animal: Animal }
-  | { status: "duplicate" };
+  | { status: "duplicate" }
+  | { status: "unknown_category" };
 
-export async function findAnimal(id: string, db: Db = getDb()): Promise<Animal | null> {
+export async function findAnimal(id: string, db: Db = getDb()): Promise<AnimalWithCategory | null> {
+  const [row] = await db
+    .select({ ...getTableColumns(animals), categoryName: categories.name })
+    .from(animals)
+    .innerJoin(categories, eq(categories.id, animals.categoryId))
+    .where(eq(animals.id, id));
+  return row ?? null;
+}
+
+async function findAnimalRow(id: string, db: Db): Promise<Animal | null> {
   const [row] = await db.select().from(animals).where(eq(animals.id, id));
   return row ?? null;
 }
 
 export async function createAnimal(input: NewAnimal, db: Db = getDb()): Promise<CreateResult> {
-  const existing = await findAnimal(input.id, db);
+  const existing = await findAnimalRow(input.id, db);
   if (existing) return { status: "existing", animal: existing };
 
   try {
@@ -25,7 +37,8 @@ export async function createAnimal(input: NewAnimal, db: Db = getDb()): Promise<
       .values({
         id: input.id,
         externalId: input.externalId,
-        category: input.category,
+        categoryId: input.categoryId,
+        readiness: input.readiness,
         sex: input.sex,
         birthDateEstimated: birthDateFromAge(input.age, input.ageUnit),
         ageInputUnit: input.ageUnit,
@@ -34,17 +47,18 @@ export async function createAnimal(input: NewAnimal, db: Db = getDb()): Promise<
       .returning();
     return { status: "created", animal };
   } catch (error) {
+    if (foreignKeyViolation(error) === "animals_category_id_categories_id_fk") return { status: "unknown_category" };
     const constraint = uniqueViolation(error);
     if (constraint === "animals_external_id_unique") return { status: "duplicate" };
     if (constraint !== null) {
-      const raced = await findAnimal(input.id, db);
+      const raced = await findAnimalRow(input.id, db);
       if (raced) return { status: "existing", animal: raced };
     }
     throw error;
   }
 }
 
-export type AnimalListItem = Animal & {
+export type AnimalListItem = AnimalWithCategory & {
   photoCount: number;
   lastPhotoAt: Date | null;
   mainPhotoId: string | null;
@@ -54,6 +68,7 @@ export async function listAnimals(db: Db = getDb()): Promise<AnimalListItem[]> {
   const rows = await db
     .select({
       animal: animals,
+      categoryName: categories.name,
       photoCount: sql<number>`count(${animalImages.id})::int`,
       lastPhotoAt: sql<string | null>`max(${animalImages.capturedAt})`,
       mainPhotoId: sql<string | null>`(
@@ -64,12 +79,14 @@ export async function listAnimals(db: Db = getDb()): Promise<AnimalListItem[]> {
       )`,
     })
     .from(animals)
+    .innerJoin(categories, eq(categories.id, animals.categoryId))
     .leftJoin(animalImages, eq(animalImages.animalId, animals.id))
-    .groupBy(animals.id)
+    .groupBy(animals.id, categories.name)
     .orderBy(desc(animals.createdAt));
 
   return rows.map((r) => ({
     ...r.animal,
+    categoryName: r.categoryName,
     photoCount: r.photoCount,
     lastPhotoAt: r.lastPhotoAt ? new Date(r.lastPhotoAt) : null,
     mainPhotoId: r.mainPhotoId,
@@ -82,4 +99,43 @@ export async function listImages(animalId: string, db: Db = getDb()): Promise<An
     .from(animalImages)
     .where(eq(animalImages.animalId, animalId))
     .orderBy(desc(animalImages.capturedAt));
+}
+
+export type ReadinessUpdate = { animal: Animal; photosUpdated: number };
+
+/**
+ * Muda o rótulo atual do animal. `FROM_NOW`: só as fotos enviadas depois recebem o rótulo novo.
+ * `FIX_ALL_PHOTOS`: corrige também o rótulo de captura de todas as fotos dele, na mesma transação.
+ */
+export async function updateReadiness(
+  id: string,
+  change: ReadinessChange,
+  db: Db = getDb(),
+): Promise<ReadinessUpdate | null> {
+  return db.transaction(async (tx) => {
+    const [animal] = await tx.update(animals).set({ readiness: change.readiness }).where(eq(animals.id, id)).returning();
+    if (!animal) return null;
+    if (change.scope === "FROM_NOW") return { animal, photosUpdated: 0 };
+    const photos = await tx
+      .update(animalImages)
+      .set({ readinessAtCapture: change.readiness })
+      .where(eq(animalImages.animalId, id))
+      .returning({ id: animalImages.id });
+    return { animal, photosUpdated: photos.length };
+  });
+}
+
+export type SummaryRow = { readiness: Readiness; categoryId: string; photos: number };
+
+/** Fotos por rótulo de captura × categoria do animal (a categoria é lida do animal, AD-001). */
+export async function datasetPhotoCounts(db: Db = getDb()): Promise<SummaryRow[]> {
+  return db
+    .select({
+      readiness: animalImages.readinessAtCapture,
+      categoryId: animals.categoryId,
+      photos: count(animalImages.id),
+    })
+    .from(animalImages)
+    .innerJoin(animals, eq(animals.id, animalImages.animalId))
+    .groupBy(animalImages.readinessAtCapture, animals.categoryId);
 }

@@ -2,26 +2,41 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/icon";
 import { ageConversion, formatAge, type AgeUnit } from "@/lib/animals/age";
-import { CATEGORY_LABEL, SEX_LABEL } from "@/lib/animals/format";
+import { ReadinessBadge } from "@/components/readiness-badge";
+import { ReadinessChoice } from "@/components/readiness-choice";
+import { SEX_LABEL } from "@/lib/animals/format";
 import { validateField, type AnimalField } from "@/lib/animals/validation";
 import { useOnline } from "@/lib/hooks/use-online";
+import { sendPhoto } from "@/lib/images/send-photo";
+import type { Readiness } from "@/lib/db/schema";
+import { PhotoField, type FormPhoto } from "./photo-field";
 
-type Category = keyof typeof CATEGORY_LABEL;
 type Sex = keyof typeof SEX_LABEL;
+export type CategoryOption = { id: string; name: string; description: string | null };
 
 type Values = {
   externalId: string;
-  category: Category | null;
+  categoryId: string | null;
+  readiness: Readiness | null;
   age: string;
   ageUnit: AgeUnit;
   weightKg: string;
   sex: Sex | null;
 };
 
-const INITIAL: Values = { externalId: "", category: null, age: "", ageUnit: "MONTHS", weightKg: "", sex: null };
+const INITIAL: Values = {
+  externalId: "",
+  categoryId: null,
+  readiness: null,
+  age: "",
+  ageUnit: "MONTHS",
+  weightKg: "",
+  sex: null,
+};
+const TOTAL_FIELDS = 7;
 
 function toNumber(raw: string) {
   return raw.trim() === "" ? NaN : Number(raw.replace(",", "."));
@@ -33,26 +48,32 @@ function fieldValue(field: AnimalField, v: Values): unknown {
   return v[field];
 }
 
-export function AnimalForm() {
+export function AnimalForm({ categories }: { categories: CategoryOption[] }) {
   const router = useRouter();
   const online = useOnline();
   const [values, setValues] = useState<Values>(INITIAL);
+  const [photo, setPhoto] = useState<FormPhoto | null>(null);
   const [errors, setErrors] = useState<Partial<Record<AnimalField, string>>>({});
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Fixo por formulário: se a foto falhar depois do animal salvo, tentar de novo reaproveita o mesmo animal.
+  const animalId = useRef<string | null>(null);
 
   const filled = [
+    photo !== null,
     values.externalId.trim() !== "",
-    values.category !== null,
+    values.categoryId !== null,
+    values.readiness !== null,
     values.age.trim() !== "",
     values.weightKg.trim() !== "",
     values.sex !== null,
   ].filter(Boolean).length;
-  const complete = filled === 5;
+  const complete = filled === TOTAL_FIELDS;
 
   function set<K extends keyof Values>(key: K, value: Values[K]) {
     setValues((v) => ({ ...v, [key]: value }));
     // Escolhas por toque validam na hora; campos de texto só ao sair (blur).
-    if (key === "category" || key === "sex" || key === "ageUnit") {
+    if (key === "categoryId" || key === "readiness" || key === "sex" || key === "ageUnit") {
       setErrors((e) => ({ ...e, [key]: undefined }));
     }
   }
@@ -62,37 +83,46 @@ export function AnimalForm() {
   }
 
   async function save() {
-    const fields: AnimalField[] = ["externalId", "category", "age", "ageUnit", "weightKg", "sex"];
+    const fields: AnimalField[] = ["externalId", "categoryId", "readiness", "age", "ageUnit", "weightKg", "sex"];
     const found: Partial<Record<AnimalField, string>> = {};
     for (const f of fields) {
       const msg = validateField(f, fieldValue(f, values));
       if (msg) found[f] = msg;
     }
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
+    if (Object.keys(found).length > 0 || !photo) return;
 
     setSaving(true);
+    setPhotoError(null);
     try {
-      const id = crypto.randomUUID();
+      const id = (animalId.current ??= crypto.randomUUID());
       const res = await fetch("/api/animals", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           id,
           externalId: values.externalId.trim(),
-          category: values.category,
+          categoryId: values.categoryId,
+          readiness: values.readiness,
           sex: values.sex,
           age: toNumber(values.age),
           ageUnit: values.ageUnit,
           weightKg: toNumber(values.weightKg),
         }),
       });
-      if (res.ok) {
-        router.push(`/animais/${id}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setErrors(body.fields ?? { externalId: "Não foi possível salvar. Tente de novo." });
         return;
       }
-      const body = await res.json().catch(() => ({}));
-      setErrors(body.fields ?? { externalId: "Não foi possível salvar. Tente de novo." });
+      try {
+        await sendPhoto(id, toNumber(values.weightKg), photo);
+      } catch (error) {
+        console.error("envio da foto do cadastro falhou", error);
+        setPhotoError("O animal foi salvo, mas a foto não foi enviada. Toque em Salvar animal para tentar de novo.");
+        return;
+      }
+      router.push(`/animais/${id}`);
     } finally {
       setSaving(false);
     }
@@ -102,18 +132,21 @@ export function AnimalForm() {
   const ageMonths = Number.isFinite(ageNumber) ? (values.ageUnit === "YEARS" ? ageNumber * 12 : ageNumber) : null;
   const unitWord = values.ageUnit === "YEARS" ? (ageNumber === 1 ? "ano" : "anos") : ageNumber === 1 ? "mês" : "meses";
 
+  const categoryName = categories.find((c) => c.id === values.categoryId)?.name;
   const preview = {
     title: values.externalId.trim() ? `Animal #${values.externalId.trim()}` : "Animal #—",
-    line1: `${values.category ? CATEGORY_LABEL[values.category] : "Categoria"} • ${values.sex ? SEX_LABEL[values.sex] : "Sexo"}`,
+    line1: `${categoryName ?? "Categoria"} • ${values.sex ? SEX_LABEL[values.sex] : "Sexo"}`,
     line2: `${ageMonths !== null ? formatAge(ageMonths) : "Idade"} • ${values.weightKg.trim() ? `${values.weightKg.trim()} kg` : "Peso"}`,
   };
 
   const canSave = complete && online && !saving;
+  const weightNumber = toNumber(values.weightKg);
+  const cameraWeight = validateField("weightKg", weightNumber) ? null : weightNumber;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col">
       <header className="flex items-center gap-2 px-3 pt-3">
-        <Link href="/animais" aria-label="Fechar" className="flex size-11 items-center justify-center">
+        <Link href="/dataset" aria-label="Fechar" className="flex size-11 items-center justify-center">
           <Icon name="close" />
         </Link>
         <h1 className="text-[20px] font-bold">Novo animal</h1>
@@ -121,6 +154,18 @@ export function AnimalForm() {
       </header>
 
       <div className="flex flex-col gap-5 px-4 pb-6 pt-3" data-testid="form-fields">
+        <Field label="Foto do animal" error={photoError ?? undefined} testId="field-photo">
+          <PhotoField
+            photo={photo}
+            onChange={(next) => {
+              setPhoto(next);
+              setPhotoError(null);
+            }}
+            weightKg={cameraWeight}
+            invalid={photoError !== null && photo === null}
+          />
+        </Field>
+
         <Field label="Identificação" error={errors.externalId} testId="field-externalId">
           <div
             className={`flex h-14 items-center gap-2.5 rounded-btn border bg-white px-3.5 focus-within:border-[1.5px] focus-within:border-primary focus-within:shadow-[0_0_0_4px_#EAF5EF] ${
@@ -140,16 +185,17 @@ export function AnimalForm() {
           </div>
         </Field>
 
-        <Field label="Categoria" error={errors.category} testId="field-category">
+        <Field label="Categoria" error={errors.categoryId} testId="field-category">
           <div className="grid grid-cols-2 gap-2.5">
-            {(["TAURINE", "ZEBU"] as const).map((c) => {
-              const on = values.category === c;
+            {categories.map((c) => {
+              const on = values.categoryId === c.id;
               return (
                 <button
-                  key={c}
+                  key={c.id}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => set("category", c)}
+                  onClick={() => set("categoryId", c.id)}
+                  data-testid="category-card"
                   className={`relative overflow-hidden rounded-card bg-white text-left ${
                     on ? "border-2 border-primary shadow-[0_0_0_4px_#EAF5EF]" : "border-[1.5px] border-line"
                   }`}
@@ -160,8 +206,8 @@ export function AnimalForm() {
                     </span>
                   </div>
                   <div className="px-3 py-2.5">
-                    <div className={`text-[16px] font-semibold ${on ? "text-primary-dark" : ""}`}>{CATEGORY_LABEL[c]}</div>
-                    <div className="text-[12px] text-muted">{c === "TAURINE" ? "Sem cupim" : "Com cupim"}</div>
+                    <div className={`text-[16px] font-semibold ${on ? "text-primary-dark" : ""}`}>{c.name}</div>
+                    {c.description && <div className="text-[12px] text-muted">{c.description}</div>}
                   </div>
                   {on && (
                     <span className="absolute right-2 top-2 flex size-[26px] items-center justify-center rounded-full bg-primary text-white" data-testid="category-check">
@@ -174,8 +220,12 @@ export function AnimalForm() {
           </div>
         </Field>
 
+        <Field label="Rótulo" error={errors.readiness} testId="field-readiness">
+          <ReadinessChoice value={values.readiness} onChange={(r) => set("readiness", r)} />
+        </Field>
+
         <Field label="Idade" error={errors.age} testId="field-age">
-          <div className="grid grid-cols-[1fr_170px] gap-2.5">
+          <div className="grid grid-cols-[minmax(0,1fr)_170px] gap-2.5">
             <div className={`flex h-14 items-center gap-2 rounded-btn border bg-white px-3.5 ${errors.age ? "border-[1.5px] border-[#C74A3A]" : "border-line"}`}>
               <input
                 aria-label="Idade"
@@ -251,11 +301,19 @@ export function AnimalForm() {
           data-testid="card-preview"
           className="flex items-center gap-3 rounded-card bg-white p-3 shadow-[0_1px_2px_rgba(23,33,28,.04),0_4px_16px_rgba(23,33,28,.04)]"
         >
-          <div className="placeholder-stripes size-14 flex-none rounded-[12px]" />
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photo.url} alt="" className="size-14 flex-none rounded-[12px] object-cover" />
+          ) : (
+            <div className="placeholder-stripes size-14 flex-none rounded-[12px]" />
+          )}
           <div>
             <div className="mb-0.5 font-mono text-[11px] font-medium text-muted">PRÉVIA DO CARD</div>
             <div className="text-[16px] font-bold">{preview.title}</div>
-            <div className="text-[14px] font-medium text-ink-2">{preview.line1}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-[14px] font-medium text-ink-2">{preview.line1}</span>
+              {values.readiness && <ReadinessBadge readiness={values.readiness} />}
+            </div>
             <div className="text-[14px] text-muted">{preview.line2}</div>
           </div>
         </section>
@@ -264,11 +322,12 @@ export function AnimalForm() {
       <footer className="sticky bottom-0 mt-auto border-t border-line bg-white px-4 pb-[34px] pt-3">
         {complete ? (
           <p className="mb-2.5 flex items-center gap-1.5 text-[13px] font-medium text-ready" data-testid="filled-counter">
-            <Icon name="check_circle" size={16} />5 de 5 preenchidos
+            <Icon name="check_circle" size={16} />
+            {TOTAL_FIELDS} de {TOTAL_FIELDS} preenchidos
           </p>
         ) : (
           <p className="mb-2.5 text-[13px] font-medium text-muted" data-testid="filled-counter">
-            {filled} de 5 preenchidos
+            {filled} de {TOTAL_FIELDS} preenchidos
           </p>
         )}
         {!online && (
