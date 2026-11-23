@@ -26,6 +26,19 @@ test("topo da home", async ({ page }) => {
   expect(chipBox.x).toBeGreaterThan(titleBox.x + titleBox.width);
 });
 
+test("engrenagem leva a ajustes", async ({ page }) => {
+  await page.goto("/");
+  const gear = page.getByRole("link", { name: "Ajustes" });
+  await expect(gear.locator('[data-icon="settings"]')).toBeVisible();
+  const box = (await gear.boundingBox())!;
+  expect(box.width).toBeGreaterThanOrEqual(44);
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  const chip = (await page.getByTestId("connection-chip").boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(chip.x + chip.width);
+  await gear.click();
+  await expect(page).toHaveURL(/\/ajustes$/);
+});
+
 test("chip online", async ({ page }) => {
   await page.goto("/");
   const chip = page.getByTestId("connection-chip");

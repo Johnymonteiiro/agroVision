@@ -4,7 +4,8 @@ import { validateField, validateNewAnimal } from "@/lib/animals/validation";
 const valid = {
   id: "8f6a2c1e-2b1d-4c3a-9e5f-0a1b2c3d4e5f",
   externalId: "023",
-  category: "TAURINE",
+  categoryId: "00000000-0000-4000-8000-000000000001",
+  readiness: "NOT_READY",
   sex: "MALE",
   age: 24,
   ageUnit: "MONTHS",

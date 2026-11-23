@@ -37,7 +37,7 @@ test("fontes servidas localmente", async ({ page }) => {
     if (/fonts\.googleapis\.com|fonts\.gstatic\.com/.test(r.url())) external.push(r.url());
   });
   await fakeDetector(page);
-  for (const path of ["/animais", "/animais/novo", `/animais/${animalId}`, `/animais/${animalId}/fotos`, `/animais/${animalId}/fotos/lateral`]) {
+  for (const path of ["/animais", "/dataset/novo", `/animais/${animalId}`, `/animais/${animalId}/fotos`, `/animais/${animalId}/fotos/lateral`]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
   }
@@ -48,8 +48,8 @@ test("areas de toque", async ({ page }) => {
   await fakeDetector(page);
   await page.goto("/animais");
   await assertTouchTargets(page);
-  await page.goto("/animais/novo");
-  await fillForm(page, { externalId: "77", category: "Taurino", age: "24", weight: "485", sex: "Macho" });
+  await page.goto("/dataset/novo");
+  await fillForm(page, { externalId: "77", category: "Taurino", readiness: "Pronto", age: "24", weight: "485", sex: "Macho" });
   await assertTouchTargets(page);
   await page.goto(`/animais/${animalId}`);
   await assertTouchTargets(page);

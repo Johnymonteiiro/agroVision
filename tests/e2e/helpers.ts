@@ -3,20 +3,49 @@ import path from "node:path";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import pg from "pg";
 import sharp from "sharp";
+import { SEED_CATEGORY_IDS, TAURINO_ID } from "../../lib/categories/seed";
 import { TEST_ENV } from "../setup/env";
 
-export async function resetDb() {
+/** Consulta direta ao banco de teste, para conferir o que a aplicação gravou. */
+export async function dbQuery<T extends Record<string, unknown>>(text: string, params: unknown[] = []) {
   const client = new pg.Client({ connectionString: TEST_ENV.DATABASE_URL });
   await client.connect();
-  await client.query("truncate table animal_images, animals");
-  await client.end();
+  try {
+    return (await client.query<T>(text, params)).rows;
+  } finally {
+    await client.end();
+  }
+}
+
+/** Apaga animais, fotos e as categorias criadas nos testes; Taurino e Zebu (seed) ficam. */
+export async function resetDb() {
+  await dbQuery("truncate table animal_images, animals");
+  await dbQuery("delete from categories where not (id = any($1::uuid[]))", [[...SEED_CATEGORY_IDS]]);
+}
+
+export async function createCategory(request: APIRequestContext, name: string, description: string | null = null) {
+  const id = randomUUID();
+  const res = await request.post("/api/categories", { data: { id, name, description } });
+  expect(res.status()).toBe(201);
+  return id;
+}
+
+export async function setReadiness(
+  request: APIRequestContext,
+  animalId: string,
+  readiness: "READY" | "NOT_READY",
+  scope: "FROM_NOW" | "FIX_ALL_PHOTOS" = "FROM_NOW",
+) {
+  const res = await request.put(`/api/animals/${animalId}/readiness`, { data: { readiness, scope } });
+  expect(res.status()).toBe(200);
 }
 
 export async function createAnimal(request: APIRequestContext, overrides: Record<string, unknown> = {}) {
   const body = {
     id: randomUUID(),
     externalId: "023",
-    category: "TAURINE",
+    categoryId: TAURINO_ID,
+    readiness: "NOT_READY",
     sex: "MALE",
     age: 24,
     ageUnit: "MONTHS",
@@ -59,7 +88,8 @@ export async function fillForm(
   v: {
     photo?: "De trás" | "De cima" | "Lateral";
     externalId?: string;
-    category?: "Taurino" | "Zebu";
+    category?: string;
+    readiness?: "Pronto" | "Não pronto";
     age?: string;
     weight?: string;
     sex?: "Macho" | "Fêmea";
@@ -74,7 +104,9 @@ export async function fillForm(
     await expect(page.getByTestId("photo-preview")).toBeVisible();
   }
   if (v.externalId !== undefined) await page.getByLabel("Identificação").fill(v.externalId);
-  if (v.category) await page.getByRole("button", { name: new RegExp(v.category) }).click();
+  // O nome acessível do cartão começa com o placeholder "foto referência"; a categoria vem depois.
+  if (v.category) await page.getByTestId("field-category").getByRole("button", { name: new RegExp(`\\b${v.category}\\b`) }).click();
+  if (v.readiness) await page.getByTestId("field-readiness").getByRole("button", { name: new RegExp(`^${v.readiness}`) }).click();
   if (v.age !== undefined) await page.getByLabel("Idade", { exact: true }).fill(v.age);
   if (v.weight !== undefined) await page.getByLabel("Peso").fill(v.weight);
   if (v.sex) await page.getByRole("button", { name: v.sex }).click();
@@ -82,6 +114,8 @@ export async function fillForm(
 
 /** Todo botão, link e campo visível com pelo menos 44 × 44 px; ações principais entre 56 e 60 px de altura. */
 export async function assertTouchTargets(page: Page) {
+  // A página chega em streaming: espera o fallback de app/loading.tsx sair antes de medir.
+  await page.getByRole("status").filter({ has: page.getByRole("img", { name: "Carregando" }) }).waitFor({ state: "detached" });
   const report = await page.evaluate(() => {
     const els = [...document.querySelectorAll<HTMLElement>("a, button, input")].filter((el) => el.offsetParent !== null);
     return els.map((el) => {

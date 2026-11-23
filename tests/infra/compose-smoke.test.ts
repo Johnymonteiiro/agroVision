@@ -33,8 +33,11 @@ describe("docker compose", () => {
         const tables = await db.query(
           "select table_name from information_schema.tables where table_schema = 'public' order by table_name",
         );
+        // dataset-rotulos: a migração 0001 criou `categories` com Taurino e Zebu (seed).
+        const seed = await db.query("select name from categories order by id");
         await db.end();
-        expect(tables.rows.map((r) => r.table_name)).toEqual(["animal_images", "animals"]);
+        expect(tables.rows.map((r) => r.table_name)).toEqual(["animal_images", "animals", "categories"]);
+        expect(seed.rows.map((r) => r.name)).toEqual(["Taurino", "Zebu"]);
 
         const page = await fetch("http://localhost:3000/animais");
         expect(page.status).toBe(200);

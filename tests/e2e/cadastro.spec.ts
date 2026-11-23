@@ -1,12 +1,20 @@
 import { expect, test } from "@playwright/test";
-import { createAnimal, fillForm, imageRows, resetDb, rgb } from "./helpers";
+import { createAnimal, createCategory, dbQuery, fillForm, imageRows, resetDb, rgb } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await resetDb();
-  await page.goto("/animais/novo");
+  await page.goto("/dataset/novo");
 });
 
-const complete = { photo: "Lateral", externalId: "023", category: "Taurino", age: "24", weight: "485", sex: "Macho" } as const;
+const complete = {
+  photo: "Lateral",
+  externalId: "023",
+  category: "Taurino",
+  readiness: "Não pronto",
+  age: "24",
+  weight: "485",
+  sex: "Macho",
+} as const;
 const saveButton = (page: import("@playwright/test").Page) => page.getByRole("button", { name: "Salvar animal" });
 const isImageUpload = (r: import("@playwright/test").Request) => /\/api\/animals\/[^/]+\/images$/.test(r.url()) && r.method() === "POST";
 
@@ -23,6 +31,10 @@ test("salvar cria o animal, envia a foto e abre o perfil", async ({ page }) => {
   await expect(page).toHaveURL(/\/animais\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { name: "Animal #023" })).toBeVisible();
   await expect(page.getByTestId("position-SIDE")).toContainText("1 foto");
+  // dataset-rotulos C7: a categoria e o rótulo escolhidos ficam gravados no animal.
+  expect(await dbQuery("select category_id, readiness from animals")).toEqual([
+    { category_id: "00000000-0000-4000-8000-000000000001", readiness: "NOT_READY" },
+  ]);
 });
 
 test("ordem dos campos e cabecalho do formulario", async ({ page }) => {
@@ -31,25 +43,35 @@ test("ordem dos campos e cabecalho do formulario", async ({ page }) => {
   const order = await page.locator('[data-testid="form-fields"] > [data-testid]').evaluateAll((els) =>
     els.map((e) => e.getAttribute("data-testid")),
   );
-  expect(order).toEqual(["field-photo", "field-externalId", "field-category", "field-age", "field-weight", "field-sex", "card-preview"]);
+  expect(order).toEqual([
+    "field-photo",
+    "field-externalId",
+    "field-category",
+    "field-readiness",
+    "field-age",
+    "field-weight",
+    "field-sex",
+    "card-preview",
+  ]);
   await expect(page.getByTestId("card-preview")).toContainText("PRÉVIA DO CARD");
 });
 
-test("contador e botao desabilitado com 0 a 5 campos", async ({ page }) => {
+test("contador e botao desabilitado com 0 a 6 campos", async ({ page }) => {
   const counter = page.getByTestId("filled-counter");
   const steps: Array<() => Promise<void>> = [
     () => fillForm(page, { photo: "Lateral" }),
     () => fillForm(page, { externalId: "023" }),
     () => fillForm(page, { category: "Taurino" }),
+    () => fillForm(page, { readiness: "Pronto" }),
     () => fillForm(page, { age: "24" }),
     () => fillForm(page, { weight: "485" }),
   ];
-  for (let filled = 0; filled <= 5; filled++) {
-    await expect(counter).toHaveText(`${filled} de 6 preenchidos`);
+  for (let filled = 0; filled <= 6; filled++) {
+    await expect(counter).toHaveText(`${filled} de 7 preenchidos`);
     await expect(saveButton(page)).toBeDisabled();
     await expect(saveButton(page)).toHaveCSS("background-color", rgb("#EEF0EF"));
     await expect(saveButton(page)).toHaveCSS("color", rgb("#9AA39E"));
-    if (filled < 5) await steps[filled]();
+    if (filled < 6) await steps[filled]();
   }
 });
 
@@ -95,7 +117,7 @@ test("trocar foto volta ao bloco vazio", async ({ page }) => {
   await expect(field).toContainText("De trás");
   await field.getByRole("button", { name: "Trocar foto" }).click();
   await expect(page.getByTestId("photo-preview")).toHaveCount(0);
-  await expect(page.getByTestId("filled-counter")).toHaveText("0 de 6 preenchidos");
+  await expect(page.getByTestId("filled-counter")).toHaveText("0 de 7 preenchidos");
 });
 
 test("falha no envio da foto mantem o formulario e reenvia sem duplicar", async ({ page }) => {
@@ -108,7 +130,7 @@ test("falha no envio da foto mantem o formulario e reenvia sem duplicar", async 
   });
   await saveButton(page).click();
   await expect(page.getByTestId("field-photo")).toContainText("O animal foi salvo, mas a foto não foi enviada.");
-  await expect(page).toHaveURL(/\/animais\/novo$/);
+  await expect(page).toHaveURL(/\/dataset\/novo$/);
 
   const retry = page.waitForResponse((r) => r.url().endsWith("/api/animals") && r.request().method() === "POST");
   await saveButton(page).click();
@@ -118,25 +140,82 @@ test("falha no envio da foto mantem o formulario e reenvia sem duplicar", async 
   await expect(page.getByTestId("position-SIDE")).toContainText("1 foto");
 });
 
-test("seis de seis habilita salvar", async ({ page }) => {
+test("sete de sete habilita salvar", async ({ page }) => {
   await fillForm(page, complete);
   const counter = page.getByTestId("filled-counter");
-  await expect(counter).toHaveText(/6 de 6 preenchidos/);
+  await expect(counter).toHaveText(/7 de 7 preenchidos/);
   await expect(counter.locator('[data-icon="check_circle"]')).toBeVisible();
   await expect(counter).toHaveCSS("color", rgb("#18864B"));
   await expect(saveButton(page)).toBeEnabled();
   await expect(saveButton(page)).toHaveCSS("background-color", rgb("#1F6B45"));
 });
 
-test("cartoes de categoria", async ({ page }) => {
-  const taurino = page.getByRole("button", { name: /Taurino/ });
-  const zebu = page.getByRole("button", { name: /Zebu/ });
+test("cartoes de categoria", async ({ page, request }) => {
+  await createCategory(request, "Nelore");
+  await page.reload();
+  const cards = page.getByTestId("field-category").getByRole("button");
+  await expect(cards).toHaveCount(3);
+  const [taurino, zebu, nelore] = [cards.nth(0), cards.nth(1), cards.nth(2)];
+  await expect(taurino).toContainText("Taurino");
+  await expect(zebu).toContainText("Zebu");
+  await expect(nelore).toContainText("Nelore");
+  // Grade de 2 colunas: Zebu ao lado de Taurino, Nelore na linha de baixo.
+  const [bt, bz, bn] = [(await taurino.boundingBox())!, (await zebu.boundingBox())!, (await nelore.boundingBox())!];
+  expect(Math.round(bz.y)).toBe(Math.round(bt.y));
+  expect(bz.x).toBeGreaterThan(bt.x);
+  expect(bn.y).toBeGreaterThanOrEqual(bt.y + bt.height);
   await expect(taurino).toContainText("Sem cupim");
   await expect(zebu).toContainText("Com cupim");
-  await taurino.click();
-  await expect(taurino).toHaveCSS("border-top-color", rgb("#1F6B45"));
-  await expect(taurino.getByTestId("category-check")).toBeVisible();
+  // Nelore foi cadastrada sem descrição: só o placeholder da foto e o nome.
+  await expect(nelore).toHaveText("foto referênciaNelore");
+  await nelore.click();
+  await expect(nelore).toHaveCSS("border-top-color", rgb("#1F6B45"));
+  await expect(nelore.getByTestId("category-check")).toBeVisible();
+  await expect(taurino.getByTestId("category-check")).toHaveCount(0);
   await expect(zebu.getByTestId("category-check")).toHaveCount(0);
+});
+
+test("cartoes de rotulo", async ({ page }) => {
+  const field = page.getByTestId("field-readiness");
+  const pronto = field.getByRole("button", { name: /^Pronto/ });
+  const naoPronto = field.getByRole("button", { name: /^Não pronto/ });
+  await expect(pronto).toContainText("Pronto para abate");
+  await expect(naoPronto).toContainText("Ainda não está pronto");
+  await pronto.click();
+  await expect(pronto).toHaveCSS("border-top-color", rgb("#18864B"));
+  await expect(pronto).toHaveCSS("background-color", rgb("#E3F3EA"));
+  await expect(naoPronto).toHaveCSS("background-color", rgb("#FFFFFF"));
+  await naoPronto.click();
+  await expect(naoPronto).toHaveCSS("border-top-color", rgb("#C74A3A"));
+  await expect(naoPronto).toHaveCSS("background-color", rgb("#FAEBE8"));
+  await expect(pronto).toHaveCSS("background-color", rgb("#FFFFFF"));
+});
+
+test("previa do card com selo do rotulo", async ({ page }) => {
+  const badge = page.getByTestId("card-preview").getByTestId("readiness-badge");
+  await expect(badge).toHaveCount(0);
+  await fillForm(page, { readiness: "Não pronto" });
+  await expect(badge).toHaveText("NÃO PRONTO");
+  await expect(badge).toHaveCSS("background-color", rgb("#FAEBE8"));
+  await expect(badge).toHaveCSS("color", rgb("#C74A3A"));
+  await fillForm(page, { readiness: "Pronto" });
+  await expect(badge).toHaveText("PRONTO");
+  await expect(badge).toHaveCSS("background-color", rgb("#E3F3EA"));
+  await expect(badge).toHaveCSS("color", rgb("#136B3C"));
+});
+
+test("fechar volta para o dataset", async ({ page }) => {
+  await page.getByRole("link", { name: "Fechar" }).click();
+  await expect(page).toHaveURL(/\/dataset$/);
+});
+
+// C12 revisto em 2026-11-22: com app/loading.tsx a página sai em streaming (status 200), então o
+// "não encontrado" é um soft 404 - a página do Next com a meta robots noindex.
+test("animais novo cai no nao encontrado", async ({ page }) => {
+  await page.goto("/animais/novo");
+  await expect(page.getByText("This page could not be found.")).toBeVisible();
+  await expect(page.locator('meta[name="robots"][content="noindex"]').first()).toBeAttached();
+  await expect(page.getByRole("heading", { name: "Novo animal" })).toHaveCount(0);
 });
 
 test("botoes de sexo com icones", async ({ page }) => {
@@ -156,12 +235,17 @@ test("peso com kg dentro do campo", async ({ page }) => {
   await expect(page.getByTestId("field-weight").getByText("kg", { exact: true })).toBeVisible();
 });
 
-test("previa do card", async ({ page }) => {
+test("previa do card", async ({ page, request }) => {
+  await createCategory(request, "Nelore");
+  await page.reload();
   await fillForm(page, complete);
   const preview = page.getByTestId("card-preview");
   await expect(preview).toContainText("Animal #023");
   await expect(preview).toContainText("Taurino • Macho");
   await expect(preview).toContainText("24 meses • 485 kg");
+  // dataset-rotulos C11: o nome da categoria vem do banco, inclusive o de uma categoria cadastrada.
+  await fillForm(page, { category: "Nelore", sex: "Fêmea" });
+  await expect(preview).toContainText("Nelore • Fêmea");
 });
 
 test("peso fora da faixa nao envia", async ({ page }) => {
@@ -172,7 +256,7 @@ test("peso fora da faixa nao envia", async ({ page }) => {
   await fillForm(page, { ...complete, weight: "29" });
   await saveButton(page).click();
   await expect(page.getByTestId("field-weight")).toContainText("Confira o peso informado");
-  await expect(page).toHaveURL(/\/animais\/novo$/);
+  await expect(page).toHaveURL(/\/dataset\/novo$/);
   expect(posted).toBe(false);
 });
 
@@ -181,7 +265,7 @@ test("identificacao duplicada mostra o erro no campo", async ({ page, request })
   await fillForm(page, { ...complete, externalId: "a12 " });
   await saveButton(page).click();
   await expect(page.getByTestId("field-externalId")).toContainText("Já existe um animal com este ID.");
-  await expect(page).toHaveURL(/\/animais\/novo$/);
+  await expect(page).toHaveURL(/\/dataset\/novo$/);
 });
 
 test("erro so ao sair do campo", async ({ page }) => {

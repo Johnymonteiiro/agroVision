@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createAnimal, resetDb, uploadPhoto } from "./helpers";
+import { createAnimal, createCategory, resetDb, uploadPhoto } from "./helpers";
 
 test.beforeEach(async () => {
   await resetDb();
@@ -14,7 +14,7 @@ test("topo sem foto mostra placeholder e voltar", async ({ page, request }) => {
 });
 
 test("cartao do perfil", async ({ page, request }) => {
-  const animal = await createAnimal(request, { externalId: "023", category: "TAURINE", sex: "MALE", age: 24, weightKg: 485 });
+  const animal = await createAnimal(request, { externalId: "023", sex: "MALE", age: 24, weightKg: 485 });
   await page.goto(`/animais/${animal.id}`);
   const card = page.getByTestId("profile-card");
   const title = card.getByRole("heading", { name: "Animal #023" });
@@ -30,6 +30,42 @@ test("cartao do perfil", async ({ page, request }) => {
     "Peso 485 kg",
   ]);
   await expect(card.getByRole("link", { name: "Fotografar animal" })).toBeVisible();
+});
+
+test("cartao do perfil com categoria cadastrada", async ({ page, request }) => {
+  const nelore = await createCategory(request, "Nelore");
+  const animal = await createAnimal(request, { externalId: "N1", categoryId: nelore, sex: "FEMALE" });
+  await page.goto(`/animais/${animal.id}`);
+  const card = page.getByTestId("profile-card");
+  await expect(card).toContainText("Nelore • Fêmea");
+  const grid = await card.locator("dl > div").first().innerText();
+  expect(grid.replace(/\s+/g, " ").trim()).toBe("Categoria Nelore");
+});
+
+test("rotulo no perfil", async ({ page, request }) => {
+  const animal = await createAnimal(request, { externalId: "023", readiness: "NOT_READY" });
+  await page.goto(`/animais/${animal.id}`);
+  const card = page.getByTestId("profile-card");
+  // Selo na mesma linha do título.
+  const title = (await card.getByRole("heading", { name: "Animal #023" }).boundingBox())!;
+  const titleBadge = card.getByTestId("profile-title").getByTestId("readiness-badge");
+  await expect(titleBadge).toHaveText("NÃO PRONTO");
+  const tb = (await titleBadge.boundingBox())!;
+  expect(tb.y + tb.height / 2).toBeGreaterThan(title.y);
+  expect(tb.y + tb.height / 2).toBeLessThan(title.y + title.height);
+  expect(tb.x).toBeGreaterThan(title.x);
+  // Linha "Rótulo" entre a grade e "Fotografar animal".
+  const row = card.getByTestId("readiness-row");
+  await expect(row).toContainText("Rótulo");
+  await expect(row.getByTestId("readiness-badge")).toHaveText("NÃO PRONTO");
+  const grid = (await card.locator("dl").boundingBox())!;
+  const rb = (await row.boundingBox())!;
+  const shoot = (await card.getByRole("link", { name: "Fotografar animal" }).boundingBox())!;
+  expect(rb.y).toBeGreaterThanOrEqual(grid.y + grid.height);
+  expect(shoot.y).toBeGreaterThanOrEqual(rb.y + rb.height);
+  const change = row.getByRole("link", { name: "Alterar" });
+  await expect(change).toHaveAttribute("href", `/animais/${animal.id}/rotulo?de=/animais/${animal.id}`);
+  expect((await change.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 });
 
 test("fotos por posicao da mais recente para a mais antiga", async ({ page, request }) => {

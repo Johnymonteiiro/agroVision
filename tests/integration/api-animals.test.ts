@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { POST } from "@/app/api/animals/route";
 import { birthDateFromAge } from "@/lib/animals/age";
 import { getDb } from "@/lib/db/client";
+import { ZEBU_ID } from "@/lib/categories/seed";
 import { animals } from "@/lib/db/schema";
 import { animalBody, jsonRequest, resetDb } from "../helpers/fixtures";
 
@@ -15,11 +16,13 @@ beforeEach(resetDb);
 
 describe("POST /api/animals", () => {
   it("POST valido responde 201", async () => {
-    const body = animalBody({ externalId: "023" });
+    const body = animalBody({ externalId: "023", categoryId: ZEBU_ID, readiness: "READY" });
     const res = await post(body);
     expect(res.status).toBe(201);
     const { animal } = await res.json();
-    expect(animal).toMatchObject({ id: body.id, externalId: "023", category: "TAURINE", sex: "MALE", weightKg: 485 });
+    expect(animal).toMatchObject({ id: body.id, externalId: "023", categoryId: ZEBU_ID, readiness: "READY", sex: "MALE", weightKg: 485 });
+    const [row] = await getDb().select().from(animals);
+    expect(row).toMatchObject({ categoryId: ZEBU_ID, readiness: "READY" });
     expect(await total()).toBe(1);
   });
 
@@ -54,12 +57,34 @@ describe("POST /api/animals", () => {
 
   it("corpo invalido responde 422 com cada campo", async () => {
     const body = animalBody({ weightKg: 10 }) as Record<string, unknown>;
-    delete body.category;
+    delete body.categoryId;
     const res = await post(body);
     expect(res.status).toBe(422);
     const { fields } = await res.json();
-    expect(fields.category).toBeTruthy();
+    expect(fields.categoryId).toBe("Escolha a categoria");
     expect(fields.weightKg).toBe("Confira o peso informado");
+    expect(await total()).toBe(0);
+  });
+
+  it("categoryId invalido responde 422", async () => {
+    const absent = animalBody() as Record<string, unknown>;
+    delete absent.categoryId;
+    for (const body of [absent, animalBody({ categoryId: "abc" }), animalBody({ categoryId: randomUUID() })]) {
+      const res = await post(body);
+      expect(res.status).toBe(422);
+      expect((await res.json()).fields.categoryId).toBe("Escolha a categoria");
+    }
+    expect(await total()).toBe(0);
+  });
+
+  it("readiness invalido responde 422", async () => {
+    const absent = animalBody() as Record<string, unknown>;
+    delete absent.readiness;
+    for (const body of [absent, animalBody({ readiness: "PRONTO" })]) {
+      const res = await post(body);
+      expect(res.status).toBe(422);
+      expect((await res.json()).fields.readiness).toBe("Escolha o rótulo");
+    }
     expect(await total()).toBe(0);
   });
 
