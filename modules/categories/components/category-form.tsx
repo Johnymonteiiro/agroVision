@@ -17,8 +17,24 @@ export function CategoryForm() {
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<Partial<Record<CategoryField, string>>>({});
   const [saving, setSaving] = useState(false);
+  const [image, setImage] = useState<{ file: File; url: string } | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const imageInput = useRef<HTMLInputElement>(null);
   // Fixo por formulário: reenviar depois de uma falha de rede não cria uma segunda categoria.
   const categoryId = useRef<string | null>(null);
+
+  function pickImage(file: File | undefined) {
+    if (!file) return;
+    if (image) URL.revokeObjectURL(image.url);
+    setImage({ file, url: URL.createObjectURL(file) });
+    setImageError(false);
+  }
+
+  function removeImage() {
+    if (image) URL.revokeObjectURL(image.url);
+    setImage(null);
+    setImageError(false);
+  }
 
   async function save() {
     const found: Partial<Record<CategoryField, string>> = {};
@@ -41,6 +57,17 @@ export function CategoryForm() {
         const body = await res.json().catch(() => ({}));
         setErrors(body.fields ?? { name: "Não foi possível salvar. Tente de novo." });
         return;
+      }
+      // A imagem vai depois, para a mesma categoria; se falhar, salvar de novo só reenvia (dataset-ajustes, door 3).
+      if (image) {
+        setImageError(false);
+        const form = new FormData();
+        form.set("file", image.file, image.file.name || "categoria.jpg");
+        const sent = await fetch(`/api/categories/${id}/image`, { method: "PUT", body: form }).catch(() => null);
+        if (!sent?.ok) {
+          setImageError(true);
+          return;
+        }
       }
       router.push("/dataset");
     } finally {
@@ -92,6 +119,47 @@ export function CategoryForm() {
             className={`${INPUT} ${errors.description ? "border-[1.5px] border-[#C74A3A]" : "border-line"}`}
           />
           {errors.description && <FieldError text={errors.description} />}
+        </div>
+
+        <div data-testid="field-image">
+          <div className="mb-2 text-[15px] font-semibold">Foto (opcional)</div>
+          {image ? (
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={image.url} alt="Prévia da foto da categoria" data-testid="category-image-preview" className="size-[88px] rounded-card object-cover" />
+              <button
+                type="button"
+                onClick={removeImage}
+                className="flex h-11 items-center gap-1.5 rounded-[12px] bg-primary-soft px-3.5 text-[15px] font-semibold text-primary-dark"
+              >
+                <Icon name="delete" size={20} />
+                Remover
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => imageInput.current?.click()}
+              className="flex h-14 w-full items-center justify-center gap-2 rounded-btn border-[1.5px] border-dashed border-line bg-white text-[16px] font-semibold text-primary-dark"
+            >
+              <Icon name="add_photo_alternate" />
+              Adicionar foto
+            </button>
+          )}
+          <input
+            ref={imageInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            data-testid="category-image-input"
+            onChange={(e) => {
+              pickImage(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          {imageError && (
+            <FieldError text="A categoria foi salva, mas a imagem não foi enviada. Toque em Salvar categoria para tentar de novo." />
+          )}
         </div>
       </div>
 

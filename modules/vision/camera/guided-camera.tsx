@@ -467,11 +467,23 @@ type PhotoReviewProps = {
   checking?: boolean;
   action: { label: string; icon: string; onClick: () => void; disabled?: boolean };
   onRetake: () => void;
+  // A galeria do cadastro troca "Tirar outra foto" por "Escolher outra foto" (dataset-ajustes, AC 3).
+  retake?: { label: string; icon: string; onClick: () => void };
   children?: ReactNode;
 };
 
 // Revisão da foto (design 1d / 2e): a foto em dois terços da tela e a folha branca com as ações.
-export function PhotoReview({ url, question, info, issues = [], checking = false, action, onRetake, children }: PhotoReviewProps) {
+export function PhotoReview({
+  url,
+  question,
+  info,
+  issues = [],
+  checking = false,
+  action,
+  onRetake,
+  retake,
+  children,
+}: PhotoReviewProps) {
   return (
     <section className="absolute inset-0 z-20 bg-camera" data-testid="review">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -506,11 +518,11 @@ export function PhotoReview({ url, question, info, issues = [], checking = false
         <button
           type="button"
           data-primary-action
-          onClick={onRetake}
+          onClick={retake?.onClick ?? onRetake}
           className="flex h-14 items-center justify-center gap-2.5 rounded-btn bg-primary-soft text-[17px] font-semibold text-primary-dark"
         >
-          <Icon name="replay" size={22} />
-          Tirar outra foto
+          <Icon name={retake?.icon ?? "replay"} size={22} />
+          {retake?.label ?? "Tirar outra foto"}
         </button>
         {children}
       </div>

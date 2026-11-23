@@ -1,17 +1,29 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { GuidedCamera, type CapturedPhoto } from "@/modules/vision/camera/guided-camera";
+import { GuidedCamera, PhotoReview, type CapturedPhoto } from "@/modules/vision/camera/guided-camera";
 import { Icon } from "@/modules/core/ui/icon";
 import { POSITION_LABEL, POSITION_OPTIONS, type Position } from "@/modules/vision/positions";
 import { qualityIssues } from "@/modules/vision/quality/issues";
 import { measureFile } from "@/modules/vision/quality/measure";
+import type { QualityMetrics } from "@/modules/vision/quality/metrics";
 import { QualityChecking, QualityIssues } from "@/modules/vision/quality/quality-issues";
 import type { PhotoToSend } from "@/modules/photos/send-photo";
 
 export type FormPhoto = PhotoToSend & { url: string };
 
 type Source = "camera" | "gallery";
+
+// Foto da galeria em revisão, com a medição de qualidade em andamento.
+type GalleryShot = {
+  file: File;
+  url: string;
+  position: Position;
+  width: number;
+  height: number;
+  capturedAt: string;
+  measuring: Promise<QualityMetrics | null>;
+};
 
 type Props = {
   photo: FormPhoto | null;
@@ -29,6 +41,8 @@ export function PhotoField({ photo, onChange, weightKg, invalid }: Props) {
   const [source, setSource] = useState<Source | null>(null);
   const [cameraPosition, setCameraPosition] = useState<Position | null>(null);
   const [unreadable, setUnreadable] = useState(false);
+  const [gallery, setGallery] = useState<GalleryShot | null>(null);
+  const [galleryQuality, setGalleryQuality] = useState<{ file: File; metrics: QualityMetrics | null } | null>(null);
   // Foto atual: a medição da galeria só vale se esta ainda for a foto do formulário quando voltar.
   const latest = useRef<string | null>(null);
 
@@ -52,6 +66,7 @@ export function PhotoField({ photo, onChange, weightKg, invalid }: Props) {
     setSource(null);
   }
 
+  // A foto da galeria passa pela revisão com a análise antes de entrar no formulário (dataset-ajustes, S1).
   async function fromGallery(file: File | undefined) {
     const position = galleryPosition.current;
     if (!file || !position) return;
@@ -60,17 +75,56 @@ export function PhotoField({ photo, onChange, weightKg, invalid }: Props) {
       const bitmap = await createImageBitmap(file);
       const { width, height } = bitmap;
       bitmap.close();
-      // Sem o guia ao vivo, o enquadramento fica UNAVAILABLE para a curadoria poder separar essas fotos.
-      const kept = keep(
-        // lastModified é a data do arquivo; o navegador usa o momento da escolha quando ela não existe.
-        { blob: file, framing: "UNAVAILABLE", capturedAt: new Date(file.lastModified).toISOString(), width, height },
+      const measuring = measureFile(file);
+      setGallery({
+        file,
+        url: URL.createObjectURL(file),
         position,
-      );
-      const quality = await measureFile(file);
-      if (latest.current === kept.imageId) onChange({ ...kept, quality });
+        width,
+        height,
+        // lastModified é a data do arquivo; o navegador usa o momento da escolha quando ela não existe.
+        capturedAt: new Date(file.lastModified).toISOString(),
+        measuring,
+      });
+      void measuring.then((metrics) => setGalleryQuality({ file, metrics }));
     } catch {
       setUnreadable(true);
     }
+  }
+
+  function closeGallery() {
+    if (gallery) URL.revokeObjectURL(gallery.url);
+    setGallery(null);
+  }
+
+  function acceptGallery() {
+    if (!gallery) return;
+    const measured = galleryQuality?.file === gallery.file ? galleryQuality.metrics : undefined;
+    // Sem o guia ao vivo, o enquadramento fica UNAVAILABLE para a curadoria poder separar essas fotos.
+    const kept = keep(
+      {
+        blob: gallery.file,
+        framing: "UNAVAILABLE",
+        capturedAt: gallery.capturedAt,
+        width: gallery.width,
+        height: gallery.height,
+        quality: measured,
+      },
+      gallery.position,
+    );
+    // Usada antes de a medição voltar: o bloco mostra "Verificando a foto..." até ela chegar.
+    if (measured === undefined) {
+      void gallery.measuring.then((quality) => {
+        if (latest.current === kept.imageId) onChange({ ...kept, quality });
+      });
+    }
+    closeGallery();
+  }
+
+  function chooseAnother() {
+    closeGallery();
+    // Ainda dentro do toque do usuário: reabre o seletor para a mesma posição.
+    galleryRef.current?.click();
   }
 
   function replace() {
@@ -218,6 +272,43 @@ export function PhotoField({ photo, onChange, weightKg, invalid }: Props) {
           />
         </div>
       )}
+
+      {gallery && <GalleryReview shot={gallery} quality={galleryQuality} onUse={acceptGallery} onBack={closeGallery} onAnother={chooseAnother} />}
     </>
+  );
+}
+
+type GalleryReviewProps = {
+  shot: GalleryShot;
+  quality: { file: File; metrics: QualityMetrics | null } | null;
+  onUse: () => void;
+  onBack: () => void;
+  onAnother: () => void;
+};
+
+// Revisão da foto da galeria, igual à da câmera, com "Escolher outra foto" (dataset-ajustes, AC 1-4).
+function GalleryReview({ shot, quality, onUse, onBack, onAnother }: GalleryReviewProps) {
+  const checking = quality?.file !== shot.file;
+  const metrics = checking ? null : quality.metrics;
+  const issues = metrics ? qualityIssues(metrics) : [];
+  return (
+    <div className="fixed inset-0 z-50 bg-camera">
+      <div className="relative mx-auto h-dvh w-full max-w-[480px] overflow-hidden">
+        <PhotoReview
+          url={shot.url}
+          question="Esta foto está boa para o dataset?"
+          info={
+            <p className="flex items-center gap-2 text-[14px] text-muted" data-testid="review-info">
+              <span className="font-semibold text-ink-2">{POSITION_LABEL[shot.position]}</span>·<span>Foto da galeria</span>
+            </p>
+          }
+          checking={checking}
+          issues={issues}
+          action={{ label: issues.length > 0 ? "Usar mesmo assim" : "Usar foto", icon: "check", onClick: onUse }}
+          onRetake={onBack}
+          retake={{ label: "Escolher outra foto", icon: "photo_library", onClick: onAnother }}
+        />
+      </div>
+    </div>
   );
 }

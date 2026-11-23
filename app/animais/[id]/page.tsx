@@ -8,6 +8,8 @@ import { SEX_LABEL, animalSummary } from "@/modules/animals/format";
 import { photoCountLabel } from "@/modules/core/format/count";
 import { findAnimal, listImages } from "@/modules/animals/server/repo";
 import { mainPhoto } from "@/modules/photos/main-photo";
+import { PhotoGrid } from "@/modules/photos/components/photo-grid";
+import { formatWhen } from "@/modules/core/format/date";
 
 export default async function PerfilPage({ params }: PageProps<"/animais/[id]">) {
   const { id } = await params;
@@ -107,19 +109,10 @@ export default async function PerfilPage({ params }: PageProps<"/animais/[id]">)
                   </Link>
                 </div>
               ) : (
-                <ul className="grid grid-cols-4 gap-2">
-                  {photos.map((img) => (
-                    <li key={img.id}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`/api/images/${img.id}?variant=thumb`}
-                        alt=""
-                        data-image-id={img.id}
-                        className="aspect-square w-full rounded-[10px] object-cover"
-                      />
-                    </li>
-                  ))}
-                </ul>
+                <PhotoGrid
+                  positionLabel={POSITION_LABEL[position]}
+                  photos={photos.map((img) => ({ id: img.id, when: formatWhen(img.capturedAt) }))}
+                />
               )}
             </div>
           </section>

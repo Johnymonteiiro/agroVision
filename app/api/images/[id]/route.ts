@@ -4,6 +4,13 @@ import { z } from "zod";
 import { getDb } from "@/modules/core/db/client";
 import { animalImages } from "@/modules/core/db/schema";
 import { getObjectStore } from "@/modules/core/storage/object-store";
+import { deleteAnimalImage } from "@/modules/photos/server/delete";
+
+// Exclusão definitiva da foto (dataset-ajustes): linha e objetos.
+export async function DELETE(_request: Request, ctx: RouteContext<"/api/images/[id]">) {
+  const { id } = await ctx.params;
+  return deleteAnimalImage(id);
+}
 
 export async function GET(request: Request, ctx: RouteContext<"/api/images/[id]">) {
   const { id } = await ctx.params;
