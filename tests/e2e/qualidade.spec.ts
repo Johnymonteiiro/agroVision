@@ -46,6 +46,10 @@ async function formGallery(page: Page, file: GalleryFile) {
   const chooser = page.waitForEvent("filechooser");
   await page.getByRole("dialog").getByRole("button", { name: "Lateral" }).click();
   await (await chooser).setFiles(file);
+  // dataset-ajustes C28: a foto da galeria passa pela revisão; espera a análise e usa a foto.
+  const review = page.getByTestId("review");
+  await expect(review.getByTestId("quality-checking")).toHaveCount(0);
+  await review.getByRole("button", { name: /^Usar (foto|mesmo assim)$/ }).click();
   await expect(page.getByTestId("photo-preview")).toBeVisible();
 }
 

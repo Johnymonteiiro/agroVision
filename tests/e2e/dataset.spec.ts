@@ -12,9 +12,11 @@ const filterLabels = async (page: Page) =>
     (l) => l.trim(),
   );
 
+// dataset-ajustes C27: "Cadastrar animal" virou "Novo cadastro" › "Animal".
 test("cadastrar animal abre o formulario", async ({ page }) => {
   await page.goto("/dataset");
-  await page.getByRole("link", { name: "Cadastrar animal" }).click();
+  await page.getByRole("button", { name: "Novo cadastro" }).click();
+  await page.getByRole("menuitem", { name: "Animal" }).click();
   await expect(page).toHaveURL(/\/dataset\/novo$/);
   await expect(page.getByRole("heading", { name: "Novo animal" })).toBeVisible();
 });
@@ -32,7 +34,8 @@ test("cabecalho e ordem das secoes", async ({ page, request }) => {
   await expect(page.getByRole("heading", { name: "Dataset", level: 1 })).toBeVisible();
   await expect(page.getByTestId("dataset-totals")).toHaveText("2 animais · 3 fotos");
 
-  const button = page.getByRole("link", { name: "Cadastrar animal" });
+  // dataset-ajustes C27: "Novo cadastro" na linha do título; a seção Categorias saiu.
+  const button = page.getByRole("button", { name: "Novo cadastro" });
   await expect(button).toHaveCSS("background-color", rgb("#1F6B45"));
   await expect(button.locator('[data-icon="add"]')).toBeVisible();
 
@@ -40,9 +43,7 @@ test("cabecalho e ordem das secoes", async ({ page, request }) => {
   const order = [
     await y(page.getByRole("heading", { name: "Dataset", level: 1 })),
     await y(page.getByTestId("dataset-totals")),
-    await y(button),
     await y(page.getByRole("heading", { name: "Resumo", level: 2 })),
-    await y(page.getByRole("heading", { name: "Categorias", level: 2 })),
     await y(page.getByRole("heading", { name: "Animais", level: 2 })),
   ];
   expect([...order].sort((p, q) => p - q)).toEqual(order);
@@ -90,20 +91,7 @@ test("resumo conta o rotulo da captura", async ({ page, request }) => {
   await expect(summaryCard(page, "READY").getByTestId("summary-total")).toHaveText("1 foto");
 });
 
-test("lista de categorias", async ({ page, request }) => {
-  await createAnimal(request, { externalId: "T1" });
-  await createCategory(request, "Nelore");
-  await page.goto("/dataset");
-  const items = page.getByTestId("category-item");
-  const texts = (await items.allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
-  expect(texts).toEqual(["Taurino · Sem cupim 1 animal", "Zebu · Com cupim 0 animais", "Nelore 0 animais"]);
-  // "+ Nova" na linha do título da seção.
-  const title = (await page.getByRole("heading", { name: "Categorias", level: 2 }).boundingBox())!;
-  const add = (await page.getByRole("link", { name: "+ Nova" }).boundingBox())!;
-  expect(add.y).toBeLessThan(title.y + title.height);
-  expect(add.y + add.height).toBeGreaterThan(title.y);
-  expect(add.x).toBeGreaterThan(title.x + title.width);
-});
+// "lista de categorias" (dataset-rotulos C33) saiu: a aba Dataset não lista mais as categorias (dataset-ajustes AC 19).
 
 test("filtros da lista do dataset", async ({ page, request }) => {
   await createAnimal(request, { externalId: "A", readiness: "READY" });
@@ -142,9 +130,11 @@ test("selo do rotulo na lista do dataset", async ({ page, request }) => {
   await expect(notReady).toHaveCSS("color", rgb("#C74A3A"));
 });
 
+// dataset-ajustes C27: "+ Nova" virou "Novo cadastro" › "Categoria".
 test("nova categoria abre o formulario", async ({ page }) => {
   await page.goto("/dataset");
-  await page.getByRole("link", { name: "+ Nova" }).click();
+  await page.getByRole("button", { name: "Novo cadastro" }).click();
+  await page.getByRole("menuitem", { name: "Categoria" }).click();
   await expect(page).toHaveURL(/\/dataset\/categorias\/nova$/);
   await expect(page.getByRole("heading", { name: "Nova categoria" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Fechar" }).locator('[data-icon="close"]')).toBeVisible();
@@ -160,7 +150,10 @@ test("salvar categoria volta para o dataset", async ({ page }) => {
   await page.getByLabel("Descrição (opcional)").fill("Cruzado zebuíno");
   await page.getByRole("button", { name: "Salvar categoria" }).click();
   await expect(page).toHaveURL(/\/dataset$/);
-  await expect(page.getByTestId("category-item").filter({ hasText: "Nelore" })).toContainText("Nelore · Cruzado zebuíno");
+  // dataset-ajustes C27: sem a seção Categorias, a categoria salva é conferida no banco.
+  expect(await dbQuery("select name, description from categories where name = 'Nelore'")).toEqual([
+    { name: "Nelore", description: "Cruzado zebuíno" },
+  ]);
 });
 
 test("categoria nova no formulario e nos filtros", async ({ page, request }) => {
@@ -204,7 +197,7 @@ test("fechar nova categoria nao cria", async ({ page }) => {
   await page.getByLabel("Nome", { exact: true }).fill("Angus");
   await page.getByRole("link", { name: "Fechar" }).click();
   await expect(page).toHaveURL(/\/dataset$/);
-  await expect(page.getByTestId("category-item").filter({ hasText: "Angus" })).toHaveCount(0);
+  // dataset-ajustes C27: a seção Categorias saiu; fica a conferência no banco.
   expect(await dbQuery("select count(*)::int as n from categories where name = 'Angus'")).toEqual([{ n: 0 }]);
 });
 
