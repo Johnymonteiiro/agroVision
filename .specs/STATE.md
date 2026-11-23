@@ -11,9 +11,9 @@
 ## Handoff
 
 **Feature**: dataset-rotulos
-**Where**: plan.md e checks.md escritos e validados; aguardando aprovação dos checks antes do build
-**In progress**: nenhum código alterado
-**Next step**: com os checks aprovados, resetar os volumes do Docker (com confirmação), gerar a migração 0001 e começar pelo S1
+**Where**: C1-C58 fechados em `6d579ef`; unit 74, integration 38 e E2E 156 verdes
+**In progress**: verificação independente (Verifier) sobre `0ead62c..HEAD`
+**Next step**: ler `verification.md`; se FAIL, fechar os gaps e pedir uma rodada escopada
 **Blockers**: none
 **Uncommitted**: none
 **Branch**: feat/dataset-rotulos

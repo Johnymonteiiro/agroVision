@@ -59,6 +59,7 @@ Reusa o formulário de cadastro, a lista de animais (`AnimalsList`), o upload co
 | existing behaviour | a barra perde Ajustes; `/ajustes` continua existindo e passa a ser aberto pela engrenagem da Home |
 | existing checks | substitui os checks da F1 que fixavam rota, campos e botão de cadastro (ver `Supersedes`); os testes deles mudam no mesmo commit que muda o comportamento |
 | roadmap | entra a F1b `dataset-rotulos`; a F3 `exportacao-dataset` passa a montar `<READY ou NOT_READY>/<categoria>/<posição>` a partir de `readiness_at_capture` e da categoria do animal |
+| stored data | duas migrações geradas pelo drizzle-kit: `0001_dataset_labels` cria `categories` (com o seed), o enum `readiness` e as colunas novas; `0002_drop_category_enum` apaga `animals.category` e o tipo `category`. Em dois passos para o drizzle-kit não abrir a pergunta interativa de renomeação |
 | stored data | sem backfill: os dados atuais são de teste (decisão do usuário em 2026-11-22). Antes de aplicar a migração, com confirmação no momento, `docker compose down -v` apaga `pgdata` (bancos `gado_certo` e `gado_certo_test`) e `miniodata`. Sem `--rmi`: a imagem do MinIO só existe em cache local |
 
 ## Relations
@@ -119,7 +120,7 @@ O animal nasce com uma categoria da lista e o rótulo Pronto ou Não pronto.
 9. IF `POST /api/animals` recebe `categoryId` ausente, que não é uuid, ou de uma categoria que não existe THEN the system SHALL responder `422` com `fields.categoryId` = "Escolha a categoria" e não criar o animal
 10. IF `POST /api/animals` recebe `readiness` ausente ou diferente de `READY` e `NOT_READY` THEN the system SHALL responder `422` com `fields.readiness` = "Escolha o rótulo" e não criar o animal
 11. The system SHALL mostrar o resumo "<categoria> • <sexo>" com o nome da categoria vindo do banco ("Nelore • Fêmea" para um animal de categoria Nelore) na lista, no perfil (linha e grade Categoria) e na prévia
-12. IF o usuário abre `/animais/novo` THEN the system SHALL responder `404`
+12. IF o usuário abre `/animais/novo` THEN the system SHALL mostrar a página de não encontrado do Next ("This page could not be found.", com `<meta name="robots" content="noindex">`). Revisto em 2026-11-22 por decisão do usuário: antes pedia status `404`, mas com `app/loading.tsx` toda página dinâmica sai em streaming com `200`, e o `notFound()` vira um soft 404
 
 **Independent test:** pela aba Dataset, cadastrar "023" Taurino, Não pronto, 24 meses, 485 kg, Macho e ver o perfil com "Taurino • Macho" e o selo NÃO PRONTO.
 
@@ -193,7 +194,7 @@ O usuário atualiza o estado do animal sem estragar a classe das fotos já tirad
 47. WHEN o usuário salva com "Corrigir erro de cadastro" THEN the system SHALL mudar o rótulo do animal e o `readiness_at_capture` de todas as fotos dele numa transação, responder `photosUpdated` com o número de fotos e voltar para `de`
 48. WHEN o usuário toca voltar em `/animais/{id}/rotulo` THEN the system SHALL voltar para `de` sem mudar nada
 49. IF o `de` de `/animais/{id}/rotulo` não é um caminho deste app (`//host`, `/\host`, `https://host`, ausente ou repetido) THEN the system SHALL usar `/animais/{id}` como destino do voltar e do salvar
-50. IF `PUT /api/animals/{id}/readiness` recebe um id sem animal THEN the system SHALL responder `404`
+50. IF `PUT /api/animals/{id}/readiness` recebe um id sem animal THEN the system SHALL responder `404`; e `/animais/{id sem animal}/rotulo` SHALL mostrar a página de não encontrado com `noindex` (soft 404, revisto em 2026-11-22 pela mesma razão do critério 12)
 51. IF `PUT /api/animals/{id}/readiness` recebe `readiness` ou `scope` fora dos valores THEN the system SHALL responder `422` com o campo em `fields` e não mudar nada
 52. WHILE o dispositivo está offline the system SHALL desabilitar "Salvar rótulo" e mostrar "Sem internet — conecte-se para salvar."
 53. The system SHALL dar a todo controle tocável das telas novas (`/dataset`, `/dataset/categorias/nova`, `/animais/{id}/rotulo`) e da engrenagem da Home pelo menos 44 × 44 px
@@ -259,7 +260,7 @@ Product capabilities only. Process and harness rules live in AGENTS.md or as Obs
 | screen `/dataset/categorias/nova` | empty / loading | n/a - formulário sem dados carregados |
 | screen `/animais/{id}/rotulo` | destructive action confirms | AC 43, AC 45 - a correção de fotos antigas exige escolher o motivo, que mostra quantas fotos mudam |
 | screen `/animais/{id}/rotulo` | offline state | AC 52 |
-| screen `/animais/{id}/rotulo` | error state | AC 50 (animal inexistente: a página responde `404` como o perfil) |
+| screen `/animais/{id}/rotulo` | error state | AC 50 (animal inexistente: a página de não encontrado, como o perfil) |
 | screen aba Animais | empty state | AC 38 |
 | screen aba Animais | density and ordering | existing - mais recente primeiro (F1 C24); AC 36, AC 39 |
 | screen Home | ordering do topo | AC 27 |
