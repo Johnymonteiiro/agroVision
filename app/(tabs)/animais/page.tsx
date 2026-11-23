@@ -2,43 +2,23 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Icon } from "@/components/icon";
 import { InstallBanner } from "@/components/install-banner";
-import { animalSummary, formatWhen } from "@/lib/animals/format";
+import { animalsTabFilters } from "@/lib/animals/filters";
 import { listAnimals } from "@/lib/animals/repo";
-import { AnimalsList, type AnimalRow } from "./animals-list";
+import { listCategories } from "@/lib/categories/repo";
+import { AnimalsList } from "./animals-list";
+import { toAnimalRows } from "./rows";
 
+// Aba Animais: só lista. O cadastro fica na aba Dataset (dataset-rotulos).
 export default async function AnimaisPage() {
   await connection();
-  const animals = await listAnimals();
-  const rows: AnimalRow[] = animals.map((a) => {
-    const summary = animalSummary(a);
-    return {
-      id: a.id,
-      externalId: a.externalId,
-      category: a.category,
-      sex: a.sex,
-      title: summary.title,
-      line1: summary.line1,
-      line2: summary.line2,
-      photoCount: a.photoCount,
-      lastPhoto: a.lastPhotoAt ? formatWhen(a.lastPhotoAt) : null,
-      thumbUrl: a.mainPhotoId ? `/api/images/${a.mainPhotoId}?variant=thumb` : null,
-    };
-  });
+  const [animals, categories] = await Promise.all([listAnimals(), listCategories()]);
+  const rows = toAnimalRows(animals);
 
   return (
     <main className="mx-auto w-full max-w-[480px] pb-10">
-      <header className="flex items-end justify-between px-5 pt-6">
-        <div>
-          <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.02em]">Animais</h1>
-          <p className="mt-1 text-[14px] text-muted">{rows.length} cadastrados</p>
-        </div>
-        <Link
-          href="/animais/novo"
-          className="flex h-11 items-center gap-1.5 rounded-[12px] bg-primary pl-2.5 pr-3.5 text-[15px] font-semibold text-white"
-        >
-          <Icon name="add" size={22} />
-          Adicionar animal
-        </Link>
+      <header className="px-5 pt-6">
+        <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.02em]">Animais</h1>
+        <p className="mt-1 text-[14px] text-muted">{rows.length} cadastrados</p>
       </header>
 
       <InstallBanner />
@@ -49,17 +29,17 @@ export default async function AnimaisPage() {
             <Icon name="sell" size={30} />
           </div>
           <p className="mt-3.5 text-[17px] font-semibold">Nenhum animal cadastrado</p>
-          <p className="mt-1 text-[14px] leading-[1.4] text-muted">Os animais cadastrados aparecerão aqui.</p>
+          <p className="mt-1 text-[14px] leading-[1.4] text-muted">Cadastre animais na aba Dataset.</p>
           <Link
-            href="/animais/novo"
-            className="mt-4 flex h-12 items-center gap-2 rounded-[12px] bg-primary px-[18px] text-[15px] font-semibold text-white"
+            href="/dataset"
+            className="mt-4 flex h-12 items-center gap-2 rounded-[12px] bg-primary-soft px-[18px] text-[15px] font-semibold text-primary-dark"
           >
-            <Icon name="add" size={20} />
-            Adicionar animal
+            <Icon name="dataset" size={20} />
+            Ir para Dataset
           </Link>
         </section>
       ) : (
-        <AnimalsList rows={rows} />
+        <AnimalsList rows={rows} filters={animalsTabFilters(categories)} />
       )}
     </main>
   );

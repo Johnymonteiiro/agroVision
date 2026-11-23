@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { Icon } from "@/components/icon";
+import { ReadinessBadge } from "@/components/readiness-badge";
 import {
-  CATEGORY_LABEL,
   POSITION_LABEL,
   POSITION_ORDER,
   POSITION_SLUG,
@@ -25,7 +25,7 @@ export default async function PerfilPage({ params }: PageProps<"/animais/[id]">)
   const summary = animalSummary(animal);
 
   const grid = [
-    ["Categoria", CATEGORY_LABEL[animal.category]],
+    ["Categoria", animal.categoryName],
     ["Sexo", SEX_LABEL[animal.sex]],
     ["Idade", summary.ageShort],
     ["Peso", `${animal.weightKg} kg`],
@@ -55,7 +55,10 @@ export default async function PerfilPage({ params }: PageProps<"/animais/[id]">)
         data-testid="profile-card"
         className="relative mx-3 -mt-10 rounded-card-lg bg-white px-4 pb-4 pt-[18px] shadow-[0_1px_2px_rgba(23,33,28,.04),0_8px_24px_rgba(23,33,28,.06)]"
       >
-        <h1 className="text-[26px] font-bold leading-[1.1] tracking-[-0.02em]">{summary.title}</h1>
+        <div className="flex items-center gap-2.5" data-testid="profile-title">
+          <h1 className="text-[26px] font-bold leading-[1.1] tracking-[-0.02em]">{summary.title}</h1>
+          <ReadinessBadge readiness={animal.readiness} />
+        </div>
         <p className="mt-1.5 text-[16px] font-medium text-ink-2">{summary.line1}</p>
         <p className="mt-0.5 text-[16px] text-muted">{summary.line2}</p>
         <dl className="mt-4 grid grid-cols-4 gap-1.5">
@@ -66,6 +69,18 @@ export default async function PerfilPage({ params }: PageProps<"/animais/[id]">)
             </div>
           ))}
         </dl>
+        <div className="mt-3 flex items-center justify-between rounded-[12px] bg-bg pl-3" data-testid="readiness-row">
+          <span className="flex items-center gap-2 text-[14px] font-medium text-ink-2">
+            Rótulo
+            <ReadinessBadge readiness={animal.readiness} />
+          </span>
+          <Link
+            href={`/animais/${animal.id}/rotulo?de=/animais/${animal.id}`}
+            className="flex h-11 items-center px-3.5 text-[15px] font-semibold text-primary"
+          >
+            Alterar
+          </Link>
+        </div>
         <Link
           href={`/animais/${animal.id}/fotos`}
           data-primary-action

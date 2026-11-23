@@ -21,7 +21,16 @@ export default function HomePage() {
           />
           <h1 className="text-[18px] font-bold leading-[1.1] tracking-[-0.01em]">AgroVision</h1>
         </div>
-        <ConnectionChip />
+        <div className="flex items-center gap-1">
+          <ConnectionChip />
+          <Link
+            href="/ajustes"
+            aria-label="Ajustes"
+            className="flex size-11 items-center justify-center rounded-full text-ink-2"
+          >
+            <Icon name="settings" />
+          </Link>
+        </div>
       </header>
 
       <p className="mx-5 mb-4 mt-7 text-pretty text-[16px] leading-[1.45] text-muted">

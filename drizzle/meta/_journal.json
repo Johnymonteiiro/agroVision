@@ -8,6 +8,20 @@
       "when": 1791162686256,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795371335277,
+      "tag": "0001_dataset_labels",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795371344016,
+      "tag": "0002_drop_category_enum",
+      "breakpoints": true
     }
   ]
 }

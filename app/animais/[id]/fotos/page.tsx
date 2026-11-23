@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { Icon } from "@/components/icon";
+import { ReadinessBadge } from "@/components/readiness-badge";
 import { POSITION_LABEL, POSITION_OPTIONS, POSITION_SLUG, animalTitle, photoCountLabel } from "@/lib/animals/format";
 import { findAnimal, listImages } from "@/lib/animals/repo";
 
@@ -22,6 +23,22 @@ export default async function EscolherPosicaoPage({ params }: PageProps<"/animai
       </header>
       <h1 className="mt-3 text-[28px] font-bold leading-[1.1] tracking-[-0.02em]">Qual posição?</h1>
       <p className="mt-1.5 text-[16px] text-muted">Escolha antes de abrir a câmera. Cada posição aceita várias fotos.</p>
+
+      <div
+        className="mt-4 flex items-center justify-between rounded-[12px] bg-white pl-3.5 shadow-[0_0_0_1px_rgba(0,0,0,.06)]"
+        data-testid="capture-readiness"
+      >
+        <span className="flex flex-wrap items-center gap-2 text-[14px] text-ink-2">
+          As fotos serão salvas como
+          <ReadinessBadge readiness={animal.readiness} />
+        </span>
+        <Link
+          href={`/animais/${id}/rotulo?de=/animais/${id}/fotos`}
+          className="flex h-11 shrink-0 items-center px-3.5 text-[15px] font-semibold text-primary"
+        >
+          Alterar
+        </Link>
+      </div>
 
       <ul className="mt-5 flex flex-col gap-2.5">
         {POSITION_OPTIONS.map((o) => {

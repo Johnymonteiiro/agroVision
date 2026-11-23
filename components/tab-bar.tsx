@@ -9,12 +9,13 @@ const TABS = [
   { href: "/historico", label: "Histórico", icon: "history" },
   { href: "/analisar", label: "Analisar", icon: "photo_camera" },
   { href: "/animais", label: "Animais", icon: "sell" },
-  { href: "/ajustes", label: "Ajustes", icon: "settings" },
+  { href: "/dataset", label: "Dataset", icon: "dataset" },
 ] as const;
 
 const CENTER = "/analisar";
 
 // Barra inferior do design (telas 1a e 2d): quatro abas e o botão central de câmera, elevado.
+// Ajustes saiu da barra (dataset-rotulos) e abre pela engrenagem da Home.
 export function TabBar() {
   const pathname = usePathname();
 
