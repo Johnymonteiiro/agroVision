@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Icon } from "@/components/icon";
-import { InstallBanner } from "@/components/install-banner";
-import { animalsTabFilters } from "@/lib/animals/filters";
-import { listAnimals } from "@/lib/animals/repo";
-import { listCategories } from "@/lib/categories/repo";
-import { AnimalsList } from "./animals-list";
-import { toAnimalRows } from "./rows";
+import { Icon } from "@/modules/core/ui/icon";
+import { InstallBanner } from "@/modules/core/ui/install-banner";
+import { animalsTabFilters } from "@/modules/animals/filters";
+import { listAnimals } from "@/modules/animals/server/repo";
+import { listCategories } from "@/modules/categories/server/repo";
+import { AnimalsList } from "@/modules/animals/components/animals-list";
+import { toAnimalRows } from "@/modules/animals/to-rows";
 
 // Aba Animais: só lista. O cadastro fica na aba Dataset (dataset-rotulos).
 export default async function AnimaisPage() {

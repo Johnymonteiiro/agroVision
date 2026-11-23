@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { sql } from "drizzle-orm";
 import { POST as postAnimal } from "@/app/api/animals/route";
-import { SEED_CATEGORY_IDS, TAURINO_ID } from "@/lib/categories/seed";
-import { getDb } from "@/lib/db/client";
-import { createMinioClient } from "@/lib/storage/object-store";
+import { SEED_CATEGORY_IDS, TAURINO_ID } from "@/modules/categories/seed";
+import { getDb } from "@/modules/core/db/client";
+import { createMinioClient } from "@/modules/core/storage/object-store";
 
 export const minio = createMinioClient();
 export const BUCKET = "animal-images";

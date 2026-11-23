@@ -3,7 +3,7 @@ import path from "node:path";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import pg from "pg";
 import sharp from "sharp";
-import { SEED_CATEGORY_IDS, TAURINO_ID } from "../../lib/categories/seed";
+import { SEED_CATEGORY_IDS, TAURINO_ID } from "../../modules/categories/seed";
 import { TEST_ENV } from "../setup/env";
 
 /** Consulta direta ao banco de teste, para conferir o que a aplicação gravou. */

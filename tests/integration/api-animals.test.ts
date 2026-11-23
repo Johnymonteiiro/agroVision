@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import { count } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { POST } from "@/app/api/animals/route";
-import { birthDateFromAge } from "@/lib/animals/age";
-import { getDb } from "@/lib/db/client";
-import { ZEBU_ID } from "@/lib/categories/seed";
-import { animals } from "@/lib/db/schema";
+import { birthDateFromAge } from "@/modules/animals/age";
+import { getDb } from "@/modules/core/db/client";
+import { ZEBU_ID } from "@/modules/categories/seed";
+import { animals } from "@/modules/core/db/schema";
 import { animalBody, jsonRequest, resetDb } from "../helpers/fixtures";
 
 const url = "http://test/api/animals";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageConversion, ageInMonths, birthDateFromAge, formatAge } from "@/lib/animals/age";
+import { ageConversion, ageInMonths, birthDateFromAge, formatAge } from "@/modules/animals/age";
 
 const today = new Date("2026-10-04T12:00:00-03:00");
 

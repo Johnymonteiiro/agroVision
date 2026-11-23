@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { animalTitle } from "@/lib/animals/format";
-import { findAnimal, listImages } from "@/lib/animals/repo";
-import { safeOrigin } from "@/lib/evaluation/origin";
-import { ReadinessForm } from "./readiness-form";
+import { animalTitle } from "@/modules/animals/format";
+import { findAnimal, listImages } from "@/modules/animals/server/repo";
+import { safeOrigin } from "@/modules/core/navigation/origin";
+import { ReadinessForm } from "@/modules/animals/components/readiness-form";
 
 export default async function RotuloPage({ params, searchParams }: PageProps<"/animais/[id]/rotulo">) {
   const { id } = await params;

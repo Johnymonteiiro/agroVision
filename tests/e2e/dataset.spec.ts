@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { ZEBU_ID } from "../../lib/categories/seed";
+import { ZEBU_ID } from "../../modules/categories/seed";
 import { assertTouchTargets, createAnimal, createCategory, dbQuery, resetDb, rgb, setReadiness, uploadPhoto } from "./helpers";
 
 test.beforeEach(async () => {

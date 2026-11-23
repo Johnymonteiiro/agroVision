@@ -3,8 +3,8 @@ import { eq, sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { POST as upload } from "@/app/api/animals/[id]/images/route";
 import { PUT } from "@/app/api/animals/[id]/readiness/route";
-import { getDb } from "@/lib/db/client";
-import { animalImages, animals } from "@/lib/db/schema";
+import { getDb } from "@/modules/core/db/client";
+import { animalImages, animals } from "@/modules/core/db/schema";
 import { createAnimal, formRequest, makeJpeg, resetDb, uploadForm } from "../helpers/fixtures";
 
 const put = (animalId: string, body: unknown) =>

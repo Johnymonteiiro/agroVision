@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDistance, minDistance } from "@/lib/camera/min-distance";
+import { formatDistance, minDistance } from "@/modules/vision/geometry/min-distance";
 
 const landscape = { frameWidth: 640, frameHeight: 480 };
 const portrait = { frameWidth: 480, frameHeight: 640 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDatasetSummary } from "@/lib/dataset/summary";
+import { buildDatasetSummary } from "@/modules/dataset/summary";
 
 const TAURINO = { id: "t", name: "Taurino" };
 const ZEBU = { id: "z", name: "Zebu" };

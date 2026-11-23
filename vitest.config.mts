@@ -1,7 +1,11 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
-const alias = { "@": fileURLToPath(new URL(".", import.meta.url)) };
+const alias = {
+  "@": fileURLToPath(new URL(".", import.meta.url)),
+  // `import "server-only"` (modules/*/server, core/db, core/storage) só tem efeito no Next.
+  "server-only": fileURLToPath(new URL("./tests/setup/server-only.ts", import.meta.url)),
+};
 
 export default defineConfig({
   resolve: { alias },

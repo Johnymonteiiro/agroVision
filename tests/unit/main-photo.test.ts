@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mainPhoto } from "@/lib/photos/main-photo";
+import { mainPhoto } from "@/modules/photos/main-photo";
 
 const at = (iso: string) => new Date(iso);
 

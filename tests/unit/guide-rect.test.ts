@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guideRect } from "@/lib/camera/guide-rect";
+import { guideRect } from "@/modules/vision/geometry/guide-rect";
 
 describe("moldura da camera", () => {
   it("moldura recuada 5 por cento: quadro 1000x750 em 1000x750 px", () => {

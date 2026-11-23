@@ -1,4 +1,4 @@
-import { TabBar } from "@/components/tab-bar";
+import { TabBar } from "@/modules/core/ui/tab-bar";
 
 // Telas de topo, com a barra inferior. Cadastro, perfil e câmera ficam fora deste grupo e não a mostram.
 // O espaço embaixo (altura da barra: 8 + 50 + área segura) impede que ela cubra o fim da página.

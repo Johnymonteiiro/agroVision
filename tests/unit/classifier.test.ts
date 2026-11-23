@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Classifier } from "@/lib/evaluation/classifier";
+import type { Classifier } from "@/modules/model/classifier";
 
 const fake: Classifier = {
   model: { name: "CattleClassifier", version: "1.4.0", threshold: { READY: 0.85, NOT_READY: 0.85 } },
@@ -9,7 +9,7 @@ const fake: Classifier = {
 // O módulo guarda o carregamento em andamento; cada teste começa com um módulo novo.
 async function freshModule() {
   vi.resetModules();
-  return import("@/lib/evaluation/classifier");
+  return import("@/modules/model/classifier");
 }
 
 beforeEach(() => {

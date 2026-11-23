@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { animalsTabFilters, datasetFilters, matchesFilter, type FilterableRow } from "@/lib/animals/filters";
+import { animalsTabFilters, datasetFilters, matchesFilter, type FilterableRow } from "@/modules/animals/filters";
 
 const categories = [
   { id: "t", name: "Taurino" },

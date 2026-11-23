@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { confidencePercent, decide } from "@/lib/evaluation/decision";
+import { confidencePercent, decide } from "@/modules/model/decision";
 
 const T85 = { READY: 0.85, NOT_READY: 0.85 };
 

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { Icon } from "@/components/icon";
-import { ReadinessBadge } from "@/components/readiness-badge";
-import { POSITION_LABEL, POSITION_OPTIONS, POSITION_SLUG, animalTitle, photoCountLabel } from "@/lib/animals/format";
-import { findAnimal, listImages } from "@/lib/animals/repo";
+import { Icon } from "@/modules/core/ui/icon";
+import { ReadinessBadge } from "@/modules/animals/components/readiness-badge";
+import { POSITION_LABEL, POSITION_OPTIONS, POSITION_SLUG } from "@/modules/vision/positions";
+import { animalTitle } from "@/modules/animals/format";
+import { photoCountLabel } from "@/modules/core/format/count";
+import { findAnimal, listImages } from "@/modules/animals/server/repo";
 
 export default async function EscolherPosicaoPage({ params }: PageProps<"/animais/[id]/fotos">) {
   const { id } = await params;

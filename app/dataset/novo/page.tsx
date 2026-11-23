@@ -1,6 +1,6 @@
 import { connection } from "next/server";
-import { listCategories } from "@/lib/categories/repo";
-import { AnimalForm } from "./animal-form";
+import { listCategories } from "@/modules/categories/server/repo";
+import { AnimalForm } from "@/modules/dataset/components/animal-form";
 
 export default async function NovoAnimalPage() {
   await connection();

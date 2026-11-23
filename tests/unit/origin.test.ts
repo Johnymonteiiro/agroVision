@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeOrigin } from "@/lib/evaluation/origin";
+import { safeOrigin } from "@/modules/core/navigation/origin";
 
 describe("origem do cancelar", () => {
   it.each([

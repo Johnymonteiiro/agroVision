@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Icon } from "@/components/icon";
-import { datasetFilters } from "@/lib/animals/filters";
-import { animalCountLabel, photoCountLabel } from "@/lib/animals/format";
-import { datasetPhotoCounts, listAnimals } from "@/lib/animals/repo";
-import { listCategories } from "@/lib/categories/repo";
-import { buildDatasetSummary } from "@/lib/dataset/summary";
-import { AnimalsList } from "../animais/animals-list";
-import { toAnimalRows } from "../animais/rows";
+import { Icon } from "@/modules/core/ui/icon";
+import { datasetFilters } from "@/modules/animals/filters";
+import { animalCountLabel } from "@/modules/animals/format";
+import { photoCountLabel } from "@/modules/core/format/count";
+import { datasetPhotoCounts } from "@/modules/dataset/server/repo";
+import { listAnimals } from "@/modules/animals/server/repo";
+import { listCategories } from "@/modules/categories/server/repo";
+import { buildDatasetSummary } from "@/modules/dataset/summary";
+import { AnimalsList } from "@/modules/animals/components/animals-list";
+import { toAnimalRows } from "@/modules/animals/to-rows";
 
 const CARD = "rounded-card bg-white shadow-[0_1px_2px_rgba(23,33,28,.04),0_4px_16px_rgba(23,33,28,.04)]";
 const SECTION_TITLE = "text-[17px] font-bold";

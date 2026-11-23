@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { updateReadiness } from "@/lib/animals/repo";
-import { firstErrors, readinessChangeSchema } from "@/lib/animals/validation";
+import { updateReadiness } from "@/modules/animals/server/repo";
+import { firstErrors } from "@/modules/core/validation/errors";
+import { readinessChangeSchema } from "@/modules/animals/validation";
 
 export async function PUT(request: Request, ctx: RouteContext<"/api/animals/[id]/readiness">) {
   const { id } = await ctx.params;
