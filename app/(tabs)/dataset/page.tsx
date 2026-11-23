@@ -1,6 +1,4 @@
-import Link from "next/link";
 import { connection } from "next/server";
-import { Icon } from "@/modules/core/ui/icon";
 import { datasetFilters } from "@/modules/animals/filters";
 import { animalCountLabel } from "@/modules/animals/format";
 import { photoCountLabel } from "@/modules/core/format/count";
@@ -10,11 +8,12 @@ import { listCategories } from "@/modules/categories/server/repo";
 import { buildDatasetSummary } from "@/modules/dataset/summary";
 import { AnimalsList } from "@/modules/animals/components/animals-list";
 import { toAnimalRows } from "@/modules/animals/to-rows";
+import { NewEntryMenu } from "@/modules/dataset/components/new-entry-menu";
 
 const CARD = "rounded-card bg-white shadow-[0_1px_2px_rgba(23,33,28,.04),0_4px_16px_rgba(23,33,28,.04)]";
 const SECTION_TITLE = "text-[17px] font-bold";
 
-// Aba Dataset: cadastro de animais e categorias, resumo por rótulo de captura × categoria e a lista com filtros.
+// Aba Dataset: "Novo cadastro" (animal ou categoria), resumo por rótulo de captura × categoria e a lista com filtros.
 export default async function DatasetPage() {
   await connection();
   const [animals, categories, counts] = await Promise.all([listAnimals(), listCategories(), datasetPhotoCounts()]);
@@ -23,23 +22,15 @@ export default async function DatasetPage() {
 
   return (
     <main className="mx-auto w-full max-w-[480px] pb-10">
-      <header className="px-5 pt-6">
-        <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.02em]">Dataset</h1>
-        <p className="mt-1 text-[14px] text-muted" data-testid="dataset-totals">
-          {animalCountLabel(rows.length)} · {photoCountLabel(summary.total)}
-        </p>
+      <header className="flex items-start justify-between gap-3 px-5 pt-6">
+        <div>
+          <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.02em]">Dataset</h1>
+          <p className="mt-1 text-[14px] text-muted" data-testid="dataset-totals">
+            {animalCountLabel(rows.length)} · {photoCountLabel(summary.total)}
+          </p>
+        </div>
+        <NewEntryMenu />
       </header>
-
-      <div className="px-4 pt-4">
-        <Link
-          href="/dataset/novo"
-          data-primary-action
-          className="flex h-[58px] items-center justify-center gap-2.5 rounded-btn bg-primary text-[18px] font-semibold text-white"
-        >
-          <Icon name="add" />
-          Cadastrar animal
-        </Link>
-      </div>
 
       <section className="mt-6" data-testid="section-summary">
         <h2 className={`px-5 pb-2 ${SECTION_TITLE}`}>Resumo</h2>
@@ -65,33 +56,6 @@ export default async function DatasetPage() {
             })}
           </div>
         )}
-      </section>
-
-      <section className="mt-6" data-testid="section-categories">
-        <div className="flex items-center justify-between px-5 pb-1">
-          <h2 className={SECTION_TITLE}>Categorias</h2>
-          <Link
-            href="/dataset/categorias/nova"
-            className="flex h-11 items-center rounded-[12px] bg-primary-soft px-3.5 text-[15px] font-semibold text-primary-dark"
-          >
-            + Nova
-          </Link>
-        </div>
-        <ul className={`mx-4 ${CARD}`}>
-          {categories.map((c) => (
-            <li
-              key={c.id}
-              data-testid="category-item"
-              className="flex min-h-[52px] items-center justify-between gap-3 border-b border-line-soft px-4 py-2.5 last:border-b-0"
-            >
-              <span className="min-w-0 text-[15px]">
-                <span className="font-semibold">{c.name}</span>
-                {c.description && <span className="text-muted"> · {c.description}</span>}
-              </span>
-              <span className="shrink-0 text-[13px] font-medium text-muted">{animalCountLabel(c.animalCount)}</span>
-            </li>
-          ))}
-        </ul>
       </section>
 
       <section className="mt-6" data-testid="section-animals">

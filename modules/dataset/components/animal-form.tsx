@@ -15,7 +15,7 @@ import type { Readiness } from "@/modules/core/db/schema";
 import { PhotoField, type FormPhoto } from "@/modules/dataset/components/photo-field";
 
 type Sex = keyof typeof SEX_LABEL;
-export type CategoryOption = { id: string; name: string; description: string | null };
+export type CategoryOption = { id: string; name: string; description: string | null; imageUrl: string | null };
 
 type Values = {
   externalId: string;
@@ -200,11 +200,17 @@ export function AnimalForm({ categories }: { categories: CategoryOption[] }) {
                     on ? "border-2 border-primary shadow-[0_0_0_4px_#EAF5EF]" : "border-[1.5px] border-line"
                   }`}
                 >
-                  <div className="placeholder-stripes flex h-[70px] items-center justify-center">
-                    <span className="rounded-[4px] bg-white/75 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted">
-                      foto referência
-                    </span>
-                  </div>
+                  {c.imageUrl ? (
+                    // Imagem cadastrada na categoria (dataset-ajustes, AC 22).
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.imageUrl} alt="" data-testid="category-image" className="h-[70px] w-full object-cover" />
+                  ) : (
+                    <div className="placeholder-stripes flex h-[70px] items-center justify-center">
+                      <span className="rounded-[4px] bg-white/75 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted">
+                        foto referência
+                      </span>
+                    </div>
+                  )}
                   <div className="px-3 py-2.5">
                     <div className={`text-[16px] font-semibold ${on ? "text-primary-dark" : ""}`}>{c.name}</div>
                     {c.description && <div className="text-[12px] text-muted">{c.description}</div>}

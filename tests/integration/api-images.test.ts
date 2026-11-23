@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
-import { count, eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { count, eq, sql } from "drizzle-orm";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/animals/[id]/images/route";
 import { PUT as putReadiness } from "@/app/api/animals/[id]/readiness/route";
-import { GET } from "@/app/api/images/[id]/route";
+import { DELETE, GET } from "@/app/api/images/[id]/route";
+import { deleteAnimalImage } from "@/modules/photos/server/delete";
 import { getDb } from "@/modules/core/db/client";
 import { animalImages } from "@/modules/core/db/schema";
 import { MAX_UPLOAD_BYTES, uploadAnimalImage } from "@/modules/photos/server/upload";
@@ -277,5 +278,83 @@ describe("GET /api/images/{id}", () => {
     expect(full.headers.get("content-type")).toBe("image/jpeg");
 
     expect((await read(randomUUID(), "thumb")).status).toBe(404);
+  });
+});
+
+// dataset-ajustes S2: exclusão definitiva da foto (door 1).
+describe("DELETE /api/images/{id}", () => {
+  const remove = (id: string) => DELETE(new Request(`http://test/api/images/${id}`, { method: "DELETE" }), { params: Promise.resolve({ id }) });
+
+  async function photo() {
+    const animal = await createAnimal();
+    const { form, imageId } = uploadForm(jpegBlob(jpeg4000x3000));
+    expect((await upload(animal.id, form)).status).toBe(201);
+    const [row] = await getDb().select().from(animalImages).where(eq(animalImages.id, imageId));
+    return row;
+  }
+
+  it("DELETE apaga linha e objetos", async () => {
+    const row = await photo();
+    const res = await remove(row.id);
+    expect(res.status).toBe(204);
+    expect(await rowCount()).toBe(0);
+    expect(await objectExists(row.objectKey)).toBe(false);
+    expect(await objectExists(row.thumbKey)).toBe(false);
+  });
+
+  it("DELETE de foto inexistente responde 404", async () => {
+    expect((await remove(randomUUID())).status).toBe(404);
+    expect((await remove("abc")).status).toBe(404);
+  });
+
+  it("falha no MinIO depois da linha responde 204", async () => {
+    const row = await photo();
+    const failing: ObjectStore = {
+      put: getObjectStore().put,
+      get: getObjectStore().get,
+      remove: async () => {
+        throw new Error("S3Error: indisponível");
+      },
+    };
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const res = await deleteAnimalImage(row.id, { db: getDb(), store: failing });
+      expect(res.status).toBe(204);
+      expect(await rowCount()).toBe(0);
+      expect(logged).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ keys: [row.objectKey, row.thumbKey] }),
+      );
+    } finally {
+      logged.mockRestore();
+    }
+  });
+
+  describe("falha no banco", () => {
+    beforeEach(async () => {
+      await getDb().execute(sql`
+        create or replace function test_fail_image_delete() returns trigger language plpgsql as $$
+        begin raise exception 'falha simulada na exclusão'; end $$`);
+      await getDb().execute(sql`
+        create trigger test_fail_image_delete before delete on animal_images
+        for each row execute function test_fail_image_delete()`);
+    });
+    afterEach(async () => {
+      await getDb().execute(sql`drop trigger if exists test_fail_image_delete on animal_images`);
+      await getDb().execute(sql`drop function if exists test_fail_image_delete()`);
+    });
+
+    it("falha no banco nao remove objetos", async () => {
+      const row = await photo();
+      const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        expect((await remove(row.id)).status).toBe(500);
+      } finally {
+        logged.mockRestore();
+      }
+      expect(await rowCount()).toBe(1);
+      expect(await objectExists(row.objectKey)).toBe(true);
+      expect(await objectExists(row.thumbKey)).toBe(true);
+    });
   });
 });

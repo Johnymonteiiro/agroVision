@@ -101,6 +101,8 @@ export async function fillForm(
     const chooser = page.waitForEvent("filechooser");
     await page.getByRole("dialog").getByRole("button", { name: v.photo }).click();
     await (await chooser).setFiles(COW_PHOTO);
+    // dataset-ajustes C28: a foto da galeria passa pela revisão antes de entrar no formulário.
+    await page.getByTestId("review").getByRole("button", { name: /^Usar (foto|mesmo assim)$/ }).click();
     await expect(page.getByTestId("photo-preview")).toBeVisible();
   }
   if (v.externalId !== undefined) await page.getByLabel("Identificação").fill(v.externalId);

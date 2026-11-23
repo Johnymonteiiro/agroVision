@@ -78,6 +78,10 @@ describe("migracoes", () => {
     }
   });
 
+  it("migracao 0004 so adiciona coluna anulavel", () => {
+    expect(statements("0004_category_image.sql")).toEqual(['ALTER TABLE "categories" ADD COLUMN "image_key" text;']);
+  });
+
   it("migracao 0003 deixa fotos antigas sem medida", async () => {
     // Banco novo só para este caso: o anterior termina com a 0001 desfeita.
     const name = `${SCRATCH_DB}_q`;

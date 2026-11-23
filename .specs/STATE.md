@@ -11,10 +11,10 @@
 
 ## Handoff
 
-**Feature**: qualidade-imagem (F1c)
-**Where**: código e testes escritos (C1-C24); typecheck e lint limpos; migração `0003` aplicada no banco de dev; nenhuma prova rodada
+**Feature**: dataset-ajustes (F1d)
+**Where**: código e testes escritos (C1-C28); typecheck e lint limpos; migração `0004` aplicada no banco de dev; nenhuma prova rodada
 **In progress**: nada
-**Next step**: com autorização do usuário, rodar as provas desta feature e da `estrutura-modular` (`pnpm vitest run`, `pnpm playwright test`, `pnpm build`) e despachar os Verifiers das três features pendentes (`dataset-rotulos`, `estrutura-modular`, `qualidade-imagem`)
+**Next step**: com autorização do usuário, rodar as provas (`pnpm vitest run`, `pnpm playwright test`, `pnpm build`) e despachar os Verifiers das quatro features pendentes (`dataset-rotulos`, `estrutura-modular`, `qualidade-imagem`, `dataset-ajustes`)
 **Blockers**: autorização para rodar testes
 **Uncommitted**: none
-**Branch**: feat/qualidade-imagem (a partir de `refactor/modulos`; ainda não enviada ao GitHub)
+**Branch**: feat/dataset-ajustes (a partir de `feat/qualidade-imagem`; nenhuma das duas enviada ao GitHub)

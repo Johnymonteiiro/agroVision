@@ -40,6 +40,8 @@ export const categories = pgTable(
     id: uuid().primaryKey(),
     name: varchar({ length: 30 }).notNull(),
     description: varchar({ length: 40 }),
+    // Imagem do cartão (dataset-ajustes, door 2): `categories/{id}.webp` no MinIO; null = placeholder.
+    imageKey: text("image_key"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [uniqueIndex("categories_name_unique").on(normalized(table.name))],

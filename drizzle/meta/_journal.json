@@ -29,6 +29,13 @@
       "when": 1795404322587,
       "tag": "0003_quality_metrics",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795406854879,
+      "tag": "0004_category_image",
+      "breakpoints": true
     }
   ]
 }
