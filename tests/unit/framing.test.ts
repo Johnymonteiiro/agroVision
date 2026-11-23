@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyFraming, type FrameDetection } from "@/lib/camera/framing";
+import { classifyFraming, type FrameDetection } from "@/modules/vision/detection/framing";
 
 const W = 1000;
 const H = 750;

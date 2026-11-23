@@ -1,4 +1,4 @@
-import { uploadAnimalImage } from "@/lib/images/upload";
+import { uploadAnimalImage } from "@/modules/photos/server/upload";
 
 export async function POST(request: Request, ctx: RouteContext<"/api/animals/[id]/images">) {
   const { id } = await ctx.params;

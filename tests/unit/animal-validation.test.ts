@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateField, validateNewAnimal } from "@/lib/animals/validation";
+import { validateField, validateNewAnimal } from "@/modules/animals/validation";
 
 const valid = {
   id: "8f6a2c1e-2b1d-4c3a-9e5f-0a1b2c3d4e5f",

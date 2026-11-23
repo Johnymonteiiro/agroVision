@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateCategoryField, validateNewCategory } from "@/lib/categories/validation";
+import { validateCategoryField, validateNewCategory } from "@/modules/categories/validation";
 
 const valid = { id: "8f6a2c1e-2b1d-4c3a-9e5f-0a1b2c3d4e5f", name: "Nelore", description: null };
 

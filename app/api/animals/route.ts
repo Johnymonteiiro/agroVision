@@ -1,5 +1,5 @@
-import { createAnimal } from "@/lib/animals/repo";
-import { MESSAGES, validateNewAnimal } from "@/lib/animals/validation";
+import { createAnimal } from "@/modules/animals/server/repo";
+import { MESSAGES, validateNewAnimal } from "@/modules/animals/validation";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);

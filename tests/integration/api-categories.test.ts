@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { asc, count, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { POST } from "@/app/api/categories/route";
-import { getDb } from "@/lib/db/client";
-import { categories } from "@/lib/db/schema";
+import { getDb } from "@/modules/core/db/client";
+import { categories } from "@/modules/core/db/schema";
 import { jsonRequest, resetDb } from "../helpers/fixtures";
 
 const url = "http://test/api/categories";

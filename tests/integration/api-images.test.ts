@@ -5,10 +5,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { POST } from "@/app/api/animals/[id]/images/route";
 import { PUT as putReadiness } from "@/app/api/animals/[id]/readiness/route";
 import { GET } from "@/app/api/images/[id]/route";
-import { getDb } from "@/lib/db/client";
-import { animalImages } from "@/lib/db/schema";
-import { MAX_UPLOAD_BYTES, uploadAnimalImage } from "@/lib/images/upload";
-import { getObjectStore, type ObjectStore } from "@/lib/storage/object-store";
+import { getDb } from "@/modules/core/db/client";
+import { animalImages } from "@/modules/core/db/schema";
+import { MAX_UPLOAD_BYTES, uploadAnimalImage } from "@/modules/photos/server/upload";
+import { getObjectStore, type ObjectStore } from "@/modules/core/storage/object-store";
 import {
   createAnimal,
   formRequest,

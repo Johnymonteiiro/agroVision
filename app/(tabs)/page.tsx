@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ConnectionChip } from "@/components/connection-chip";
-import { Icon } from "@/components/icon";
-import { GalleryButton } from "./gallery-button";
-import { ModelStatus } from "./model-status";
+import { ConnectionChip } from "@/modules/core/ui/connection-chip";
+import { Icon } from "@/modules/core/ui/icon";
+import { GalleryButton } from "@/modules/evaluation/components/gallery-button";
+import { ModelStatus } from "@/modules/model/components/model-status";
 
 // Home (design 1a/1b): ponto de partida da avaliação.
 export default function HomePage() {

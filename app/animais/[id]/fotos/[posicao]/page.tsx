@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { positionFromSlug } from "@/lib/animals/format";
-import { findAnimal, listImages } from "@/lib/animals/repo";
-import { CameraCapture } from "./camera-capture";
+import { positionFromSlug } from "@/modules/vision/positions";
+import { findAnimal, listImages } from "@/modules/animals/server/repo";
+import { CameraCapture } from "@/modules/photos/components/camera-capture";
 
 export default async function CameraPage({ params }: PageProps<"/animais/[id]/fotos/[posicao]">) {
   const { id, posicao } = await params;

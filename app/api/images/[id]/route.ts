@@ -1,9 +1,9 @@
 import { Readable } from "node:stream";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { getDb } from "@/lib/db/client";
-import { animalImages } from "@/lib/db/schema";
-import { getObjectStore } from "@/lib/storage/object-store";
+import { getDb } from "@/modules/core/db/client";
+import { animalImages } from "@/modules/core/db/schema";
+import { getObjectStore } from "@/modules/core/storage/object-store";
 
 export async function GET(request: Request, ctx: RouteContext<"/api/images/[id]">) {
   const { id } = await ctx.params;

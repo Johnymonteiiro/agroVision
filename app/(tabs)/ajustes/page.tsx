@@ -1,4 +1,4 @@
-import { ComingSoon } from "@/components/coming-soon";
+import { ComingSoon } from "@/modules/core/ui/coming-soon";
 
 // O PRD (§7) chama a aba de Ajustes e a tela de Configurações.
 export default function AjustesPage() {

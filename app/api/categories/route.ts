@@ -1,5 +1,5 @@
-import { createCategory } from "@/lib/categories/repo";
-import { CATEGORY_MESSAGES, validateNewCategory } from "@/lib/categories/validation";
+import { createCategory } from "@/modules/categories/server/repo";
+import { CATEGORY_MESSAGES, validateNewCategory } from "@/modules/categories/validation";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);

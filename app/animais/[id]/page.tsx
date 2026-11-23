@@ -1,18 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { Icon } from "@/components/icon";
-import { ReadinessBadge } from "@/components/readiness-badge";
-import {
-  POSITION_LABEL,
-  POSITION_ORDER,
-  POSITION_SLUG,
-  SEX_LABEL,
-  animalSummary,
-  photoCountLabel,
-} from "@/lib/animals/format";
-import { findAnimal, listImages } from "@/lib/animals/repo";
-import { mainPhoto } from "@/lib/photos/main-photo";
+import { Icon } from "@/modules/core/ui/icon";
+import { ReadinessBadge } from "@/modules/animals/components/readiness-badge";
+import { POSITION_LABEL, POSITION_ORDER, POSITION_SLUG } from "@/modules/vision/positions";
+import { SEX_LABEL, animalSummary } from "@/modules/animals/format";
+import { photoCountLabel } from "@/modules/core/format/count";
+import { findAnimal, listImages } from "@/modules/animals/server/repo";
+import { mainPhoto } from "@/modules/photos/main-photo";
 
 export default async function PerfilPage({ params }: PageProps<"/animais/[id]">) {
   const { id } = await params;

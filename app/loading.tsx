@@ -1,5 +1,5 @@
 import Image from "next/image";
-import loader from "./loader.svg";
+import loader from "@/modules/core/ui/loader.svg";
 
 // Fallback de todas as páginas: o Next as envolve num <Suspense> enquanto o servidor busca os dados.
 export default function Loading() {
