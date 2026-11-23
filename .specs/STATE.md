@@ -11,10 +11,10 @@
 
 ## Handoff
 
-**Feature**: estrutura-modular
-**Where**: código em `febfdf9`; C2, C3 e C14 rodados e verdes; typecheck limpo; smoke no `pnpm dev` com todas as rotas em 200
+**Feature**: qualidade-imagem (F1c)
+**Where**: código e testes escritos (C1-C24); typecheck e lint limpos; migração `0003` aplicada no banco de dev; nenhuma prova rodada
 **In progress**: nada
-**Next step**: com autorização do usuário, rodar C1, C4 e C5-C13 (`pnpm vitest run`, `pnpm playwright test`, `pnpm build`) e despachar os Verifiers desta feature e da `dataset-rotulos`. Depois, planejar a checagem de qualidade em `modules/vision/quality`
+**Next step**: com autorização do usuário, rodar as provas desta feature e da `estrutura-modular` (`pnpm vitest run`, `pnpm playwright test`, `pnpm build`) e despachar os Verifiers das três features pendentes (`dataset-rotulos`, `estrutura-modular`, `qualidade-imagem`)
 **Blockers**: autorização para rodar testes
 **Uncommitted**: none
-**Branch**: refactor/modulos (a partir de `feat/dataset-rotulos`; nada foi enviado ao GitHub)
+**Branch**: feat/qualidade-imagem (a partir de `refactor/modulos`; ainda não enviada ao GitHub)

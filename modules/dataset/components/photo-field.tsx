@@ -4,6 +4,9 @@ import { useRef, useState } from "react";
 import { GuidedCamera, type CapturedPhoto } from "@/modules/vision/camera/guided-camera";
 import { Icon } from "@/modules/core/ui/icon";
 import { POSITION_LABEL, POSITION_OPTIONS, type Position } from "@/modules/vision/positions";
+import { qualityIssues } from "@/modules/vision/quality/issues";
+import { measureFile } from "@/modules/vision/quality/measure";
+import { QualityChecking, QualityIssues } from "@/modules/vision/quality/quality-issues";
 import type { PhotoToSend } from "@/modules/photos/send-photo";
 
 export type FormPhoto = PhotoToSend & { url: string };
@@ -26,10 +29,16 @@ export function PhotoField({ photo, onChange, weightKg, invalid }: Props) {
   const [source, setSource] = useState<Source | null>(null);
   const [cameraPosition, setCameraPosition] = useState<Position | null>(null);
   const [unreadable, setUnreadable] = useState(false);
+  // Foto atual: a medição da galeria só vale se esta ainda for a foto do formulário quando voltar.
+  const latest = useRef<string | null>(null);
 
-  function keep(shot: CapturedPhoto, position: Position) {
+  // `quality` undefined = medição em andamento (foto da galeria); a da câmera já vem medida.
+  function keep(shot: Omit<CapturedPhoto, "quality"> & Pick<PhotoToSend, "quality">, position: Position) {
     setUnreadable(false);
-    onChange({ ...shot, position, imageId: crypto.randomUUID(), url: URL.createObjectURL(shot.blob) });
+    const kept: FormPhoto = { ...shot, position, imageId: crypto.randomUUID(), url: URL.createObjectURL(shot.blob) };
+    latest.current = kept.imageId;
+    onChange(kept);
+    return kept;
   }
 
   function choose(position: Position) {
@@ -52,11 +61,13 @@ export function PhotoField({ photo, onChange, weightKg, invalid }: Props) {
       const { width, height } = bitmap;
       bitmap.close();
       // Sem o guia ao vivo, o enquadramento fica UNAVAILABLE para a curadoria poder separar essas fotos.
-      keep(
+      const kept = keep(
         // lastModified é a data do arquivo; o navegador usa o momento da escolha quando ela não existe.
         { blob: file, framing: "UNAVAILABLE", capturedAt: new Date(file.lastModified).toISOString(), width, height },
         position,
       );
+      const quality = await measureFile(file);
+      if (latest.current === kept.imageId) onChange({ ...kept, quality });
     } catch {
       setUnreadable(true);
     }
@@ -64,12 +75,14 @@ export function PhotoField({ photo, onChange, weightKg, invalid }: Props) {
 
   function replace() {
     if (photo) URL.revokeObjectURL(photo.url);
+    latest.current = null;
     onChange(null);
   }
 
   return (
     <>
       {photo ? (
+        <>
         <div className="relative h-[220px] overflow-hidden rounded-card bg-line-soft">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -94,6 +107,15 @@ export function PhotoField({ photo, onChange, weightKg, invalid }: Props) {
             Trocar foto
           </button>
         </div>
+        {/* Avisos da checagem de qualidade, abaixo da prévia; não bloqueiam o salvar (qualidade-imagem, AC 14). */}
+        <div className="mt-2 empty:hidden">
+          {photo.quality === undefined ? (
+            <QualityChecking />
+          ) : photo.quality ? (
+            <QualityIssues issues={qualityIssues(photo.quality)} />
+          ) : null}
+        </div>
+        </>
       ) : (
         <div
           className={`flex h-[168px] flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed bg-white ${

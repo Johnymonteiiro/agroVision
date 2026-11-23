@@ -194,11 +194,48 @@ export async function imageRows() {
   return rows;
 }
 
-/** Detector de enquadramento sem detecções, para a câmera não carregar o MediaPipe real. */
-export async function fakeDetector(page: Page) {
-  await page.addInitScript(() => {
-    (window as unknown as Record<string, unknown>).__gadoDetector = () => Promise.resolve({ detect: () => [] });
-  });
+type FakeDetectorOptions = {
+  /** Bovinos que o detector vê, ao vivo e em foto parada (padrão: 1, enquadrado no quadro de 640 × 480). */
+  animals?: number;
+  /** Segura o carregamento até `releaseDetector(page)`. */
+  hold?: boolean;
+};
+
+/**
+ * Detector falso pelo gancho `__gadoDetector`, para a câmera não carregar o MediaPipe real. Tem `detect`
+ * (ao vivo) e `detectImage` (galeria, qualidade-imagem). `window.__gadoAnimals` muda a contagem no meio do teste.
+ */
+export async function fakeDetector(page: Page, options: FakeDetectorOptions = {}) {
+  await page.addInitScript((o: FakeDetectorOptions) => {
+    const w = window as unknown as Record<string, unknown>;
+    w.__gadoAnimals = o.animals ?? 1;
+    const cows = () =>
+      Array.from({ length: w.__gadoAnimals as number }, () => ({
+        categoryName: "cow",
+        score: 0.8,
+        box: { x: 64, y: 96, width: 512, height: 288 },
+      }));
+    const detector = { detect: cows, detectImage: cows };
+    w.__gadoDetector = () =>
+      o.hold ? new Promise((resolve) => (w.__releaseDetector = () => resolve(detector))) : Promise.resolve(detector);
+  }, options);
+}
+
+/** Libera o carregamento retido por `fakeDetector(page, { hold: true })`. */
+export async function releaseDetector(page: Page) {
+  await page.waitForFunction(() => typeof (window as unknown as Record<string, unknown>).__releaseDetector === "function");
+  await page.evaluate(() => (window as unknown as { __releaseDetector: () => void }).__releaseDetector());
+}
+
+/** Imagem sintética para a galeria (qualidade-imagem): preta, branca ou a foto de referência borrada. */
+export async function galleryImage(kind: "black" | "white" | "blurred") {
+  const name = `${kind}.jpg`;
+  if (kind === "blurred") {
+    return { name, mimeType: "image/jpeg", buffer: await sharp(COW_PHOTO).blur(6).jpeg().toBuffer() };
+  }
+  const background = kind === "black" ? { r: 0, g: 0, b: 0 } : { r: 255, g: 255, b: 255 };
+  const buffer = await sharp({ create: { width: 800, height: 600, channels: 3, background } }).jpeg().toBuffer();
+  return { name, mimeType: "image/jpeg", buffer };
 }
 
 export const rgb = (hex: string) => {

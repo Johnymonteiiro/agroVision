@@ -1,7 +1,11 @@
+import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 import { TEST_ENV } from "./tests/setup/env";
 
 const PORT = 3100;
+// Quadro da câmera falsa: a foto de referência do bovino, gerada pelo global-setup. Com o padrão
+// sintético do Chromium, a checagem de qualidade (qualidade-imagem) mediria uma imagem que não é foto.
+const COW_Y4M = path.join(process.cwd(), "test-results", "fixtures", "cow-side.y4m");
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -19,7 +23,11 @@ export default defineConfig({
     timezoneId: "America/Sao_Paulo",
     permissions: ["camera"],
     launchOptions: {
-      args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
+      args: [
+        "--use-fake-device-for-media-stream",
+        "--use-fake-ui-for-media-stream",
+        `--use-file-for-fake-video-capture=${COW_Y4M}`,
+      ],
     },
   },
   webServer: {

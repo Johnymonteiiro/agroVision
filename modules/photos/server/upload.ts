@@ -23,6 +23,10 @@ const fieldsSchema = z.object({
   framing: z.enum(["FRAMED", "OUT_OF_FRAME", "TOO_FAR", "NOT_DETECTED", "UNAVAILABLE"]),
   minDistanceM: z.coerce.number().min(0).max(999),
   capturedAt: z.iso.datetime({ offset: true }),
+  // Checagem de qualidade (qualidade-imagem, door 2); sem o campo, a coluna fica null.
+  brightness: z.coerce.number().min(0).max(255).optional(),
+  sharpness: z.coerce.number().min(0).optional(),
+  animalCount: z.coerce.number().int().min(0).max(50).optional(),
 });
 
 export function objectKeys(animalId: string, position: string, imageId: string) {
@@ -100,6 +104,9 @@ export async function uploadAnimalImage(
     ageMonthsAtCapture: ageInMonths(animal.birthDateEstimated, capturedAt),
     // Rótulo do momento da captura; mudar o animal depois não regrava esta foto (AD-001).
     readinessAtCapture: animal.readiness,
+    brightness: fields.brightness ?? null,
+    sharpness: fields.sharpness ?? null,
+    animalCount: fields.animalCount ?? null,
     objectKey,
     thumbKey,
   };

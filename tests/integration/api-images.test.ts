@@ -92,6 +92,55 @@ describe("POST /api/animals/{id}/images", () => {
     }
   });
 
+  it("grava as metricas de qualidade", async () => {
+    const animal = await createAnimal();
+    const { form, imageId } = uploadForm(jpegBlob(jpeg4000x3000), {
+      brightness: "181.6",
+      sharpness: "2261.1",
+      animalCount: "1",
+    });
+    const res = await upload(animal.id, form);
+    expect(res.status).toBe(201);
+    expect((await res.json()).image).toMatchObject({ brightness: 181.6, sharpness: 2261.1, animalCount: 1 });
+    const [row] = await getDb().select().from(animalImages).where(eq(animalImages.id, imageId));
+    expect(row).toMatchObject({ brightness: 181.6, sharpness: 2261.1, animalCount: 1 });
+  });
+
+  it("foto sem metricas grava nulo", async () => {
+    const animal = await createAnimal();
+    const none = uploadForm(jpegBlob(jpeg4000x3000));
+    expect((await upload(animal.id, none.form)).status).toBe(201);
+    // Detector indisponível: chegam brilho e nitidez, sem a contagem.
+    const noCount = uploadForm(jpegBlob(jpeg4000x3000), { brightness: "120", sharpness: "300" });
+    expect((await upload(animal.id, noCount.form)).status).toBe(201);
+    const rows = await getDb().select().from(animalImages);
+    expect(rows.find((r) => r.id === none.imageId)).toMatchObject({ brightness: null, sharpness: null, animalCount: null });
+    expect(rows.find((r) => r.id === noCount.imageId)).toMatchObject({ brightness: 120, sharpness: 300, animalCount: null });
+  });
+
+  it("metricas fora dos limites respondem 422", async () => {
+    const animal = await createAnimal();
+    const bad: Array<[string, string]> = [
+      ["brightness", "-1"],
+      ["brightness", "255.1"],
+      ["sharpness", "-0.1"],
+      ["animalCount", "1.5"],
+      ["animalCount", "51"],
+    ];
+    for (const [field, value] of bad) {
+      const { form } = uploadForm(jpegBlob(jpeg4000x3000), { [field]: value });
+      const res = await upload(animal.id, form);
+      expect(res.status, `${field}=${value}`).toBe(422);
+      expect((await res.json()).fields[field], `${field}=${value}`).toBeTruthy();
+    }
+    expect(await rowCount()).toBe(0);
+    expect(await listObjects(`animals/${animal.id}/`)).toEqual([]);
+    const edges: Record<string, string>[] = [{ brightness: "0" }, { brightness: "255" }, { animalCount: "50" }];
+    for (const fields of edges) {
+      expect((await upload(animal.id, uploadForm(jpegBlob(jpeg4000x3000), fields).form)).status).toBe(201);
+    }
+  });
+
   it("linha com o rotulo da captura", async () => {
     const animal = await createAnimal({ readiness: "NOT_READY" });
     const first = uploadForm(jpegBlob(jpeg4000x3000));
