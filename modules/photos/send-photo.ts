@@ -1,6 +1,7 @@
 import type { Framing } from "@/modules/vision/detection/framing";
 import { DEFAULT_HFOV_DEG, minDistance, roundUpDistance } from "@/modules/vision/geometry/min-distance";
 import type { Position } from "@/modules/vision/positions";
+import type { QualityMetrics } from "@/modules/vision/quality/metrics";
 
 export type PhotoToSend = {
   imageId: string;
@@ -10,6 +11,8 @@ export type PhotoToSend = {
   capturedAt: string;
   width: number;
   height: number;
+  // Medida na revisão (qualidade-imagem). undefined = ainda medindo; null = não foi possível medir.
+  quality?: QualityMetrics | null;
 };
 
 // Envia a foto para POST /api/animals/{id}/images. O imageId vem do cliente, então reenviar não duplica.
@@ -29,6 +32,12 @@ export async function sendPhoto(animalId: string, weightKg: number, photo: Photo
   form.set("framing", photo.framing);
   form.set("minDistanceM", String(roundUpDistance(distance)));
   form.set("capturedAt", photo.capturedAt);
+  // Sem medida, as colunas ficam null; sem detector, só a contagem fica null.
+  if (photo.quality) {
+    form.set("brightness", String(photo.quality.brightness));
+    form.set("sharpness", String(photo.quality.sharpness));
+    if (photo.quality.animalCount !== null) form.set("animalCount", String(photo.quality.animalCount));
+  }
   const res = await fetch(`/api/animals/${animalId}/images`, { method: "POST", body: form });
   if (!res.ok) throw new Error(`upload ${res.status}`);
 }

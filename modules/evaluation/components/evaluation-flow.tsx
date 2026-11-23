@@ -14,6 +14,8 @@ import {
 import { clearPendingPhoto, peekPendingPhoto } from "@/modules/evaluation/pending-photo";
 import { useOnline } from "@/modules/core/hooks/use-online";
 import { ResultView } from "@/modules/evaluation/components/result-view";
+import { qualityIssues } from "@/modules/vision/quality/issues";
+import { useFileQuality } from "@/modules/vision/quality/measure";
 
 // A foto existe só em memória; a URL temporária é revogada quando outra foto toma o lugar dela.
 type Photo = { blob: Blob; url: string };
@@ -104,7 +106,13 @@ export function EvaluationFlow({ origin }: { origin: string }) {
           needsNetwork={false}
           chips={false}
           onGallery={(file) => setStep({ name: "review", photo: toPhoto(file) })}
-          review={{ question: QUESTION, actionLabel: "Analisar imagem", actionIcon: "center_focus_strong", notes: <ReviewNotes /> }}
+          review={{
+            question: QUESTION,
+            actionLabel: "Analisar imagem",
+            actionLabelWithIssues: "Analisar mesmo assim",
+            actionIcon: "center_focus_strong",
+            notes: <ReviewNotes />,
+          }}
           onUse={async (shot) => {
             void runAnalysis(toPhoto(shot.blob), setStep);
           }}
@@ -112,20 +120,11 @@ export function EvaluationFlow({ origin }: { origin: string }) {
       );
     case "review":
       return (
-        <main className="relative mx-auto h-dvh w-full max-w-[480px] overflow-hidden bg-camera">
-          <PhotoReview
-            url={step.photo.url}
-            question={QUESTION}
-            action={{
-              label: "Analisar imagem",
-              icon: "center_focus_strong",
-              onClick: () => void runAnalysis(step.photo, setStep),
-            }}
-            onRetake={() => backToCamera(step.photo)}
-          >
-            <ReviewNotes />
-          </PhotoReview>
-        </main>
+        <GalleryReview
+          photo={step.photo}
+          onAnalyze={() => void runAnalysis(step.photo, setStep)}
+          onRetake={() => backToCamera(step.photo)}
+        />
       );
     case "analyzing":
       return <Analyzing url={step.photo.url} model={step.model} />;
@@ -198,6 +197,30 @@ export function EvaluationFlow({ origin }: { origin: string }) {
         />
       );
   }
+}
+
+// Revisão da foto da galeria (Home ou câmera): mede a qualidade em segundo plano (qualidade-imagem, AC 13).
+function GalleryReview({ photo, onAnalyze, onRetake }: { photo: Photo; onAnalyze: () => void; onRetake: () => void }) {
+  const quality = useFileQuality(photo.blob);
+  const issues = !quality.checking && quality.metrics ? qualityIssues(quality.metrics) : [];
+  return (
+    <main className="relative mx-auto h-dvh w-full max-w-[480px] overflow-hidden bg-camera">
+      <PhotoReview
+        url={photo.url}
+        question={QUESTION}
+        checking={quality.checking}
+        issues={issues}
+        action={{
+          label: issues.length > 0 ? "Analisar mesmo assim" : "Analisar imagem",
+          icon: "center_focus_strong",
+          onClick: onAnalyze,
+        }}
+        onRetake={onRetake}
+      >
+        <ReviewNotes />
+      </PhotoReview>
+    </main>
+  );
 }
 
 function ReviewNotes() {

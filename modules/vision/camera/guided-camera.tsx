@@ -6,12 +6,24 @@ import { Icon } from "@/modules/core/ui/icon";
 import { POSITION_LABEL, type Position } from "@/modules/vision/positions";
 import { photoCountLabel } from "@/modules/core/format/count";
 import { loadDetector, type Detector } from "@/modules/vision/detection/detector";
-import { FRAMING_UI, classifyFraming, type Framing } from "@/modules/vision/detection/framing";
+import { FRAMING_UI, classifyFraming, countAnimals, type Framing } from "@/modules/vision/detection/framing";
 import { guideRect } from "@/modules/vision/geometry/guide-rect";
 import { DEFAULT_HFOV_DEG, formatDistance, minDistance } from "@/modules/vision/geometry/min-distance";
+import { qualityIssues, type QualityIssue } from "@/modules/vision/quality/issues";
+import { measureCanvas } from "@/modules/vision/quality/measure";
+import type { QualityMetrics } from "@/modules/vision/quality/metrics";
+import { QualityChecking, QualityIssues } from "@/modules/vision/quality/quality-issues";
 import { useOnline } from "@/modules/core/hooks/use-online";
 
-export type CapturedPhoto = { blob: Blob; framing: Framing; capturedAt: string; width: number; height: number };
+export type CapturedPhoto = {
+  blob: Blob;
+  framing: Framing;
+  capturedAt: string;
+  width: number;
+  height: number;
+  // Medida na captura (qualidade-imagem); null se o canvas não pôde ser lido.
+  quality: QualityMetrics | null;
+};
 
 type Props = {
   position: Position;
@@ -28,8 +40,9 @@ type Props = {
   chips?: boolean;
   // Mostra "Galeria" no controle esquerdo, no lugar do contador; a foto escolhida vai para quem chamou.
   onGallery?: (file: File) => void;
-  // Texto da revisão quando a foto não vai para o dataset (design 1d).
-  review?: { question: string; actionLabel: string; actionIcon: string; notes: ReactNode };
+  // Texto da revisão quando a foto não vai para o dataset (design 1d). `actionLabelWithIssues` vale
+  // quando a checagem de qualidade aponta problema (qualidade-imagem, AC 12).
+  review?: { question: string; actionLabel: string; actionLabelWithIssues: string; actionIcon: string; notes: ReactNode };
 };
 type StreamState = "starting" | "live" | "denied" | "error";
 type DetectorState = "loading" | "ready" | "failed";
@@ -51,6 +64,7 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<Detector | null>(null);
   const framingRef = useRef<Framing>("NOT_DETECTED");
+  const animalCountRef = useRef(0);
 
   const [stream, setStream] = useState<StreamState>("starting");
   const [detector, setDetector] = useState<DetectorState>("loading");
@@ -137,8 +151,10 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
       if (video && d && video.readyState >= 2 && now - last >= DETECT_INTERVAL_MS) {
         last = now;
         try {
-          const next = classifyFraming(d.detect(video, now), video.videoWidth, video.videoHeight);
+          const detections = d.detect(video, now);
+          const next = classifyFraming(detections, video.videoWidth, video.videoHeight);
           framingRef.current = next;
+          animalCountRef.current = countAnimals(detections);
           setFraming(next);
         } catch (error) {
           console.error("falha na detecção", error);
@@ -169,6 +185,8 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
     canvas.getContext("2d")?.drawImage(video, 0, 0);
     const framingAtCapture: Framing =
       detector === "ready" ? framingRef.current : "UNAVAILABLE";
+    // Mesmo quadro do enquadramento: a contagem de bovinos é a da última detecção ao vivo.
+    const quality = measureCanvas(canvas, detector === "ready" ? animalCountRef.current : null);
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
@@ -180,6 +198,7 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
           capturedAt: new Date().toISOString(),
           width: canvas.width,
           height: canvas.height,
+          quality,
         });
       },
       "image/jpeg",
@@ -197,8 +216,8 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
     setUploading(true);
     setUploadError(false);
     try {
-      const { blob, framing: shot, capturedAt, width, height } = captured;
-      await onUse({ blob, framing: shot, capturedAt, width, height });
+      const { blob, framing: shot, capturedAt, width, height, quality } = captured;
+      await onUse({ blob, framing: shot, capturedAt, width, height, quality });
       discard();
     } catch (error) {
       console.error("envio da foto falhou", error);
@@ -209,6 +228,16 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
   }
 
   const blockedOffline = needsNetwork && !online;
+  const issues: QualityIssue[] = captured?.quality ? qualityIssues(captured.quality) : [];
+  const actionLabel = review
+    ? issues.length > 0
+      ? review.actionLabelWithIssues
+      : review.actionLabel
+    : uploading
+      ? "Enviando..."
+      : issues.length > 0
+        ? "Usar mesmo assim"
+        : "Usar foto";
   const tips = [FIRST_TIP[position], "Boa iluminação", "Só um animal", "Corpo inteiro"];
   const tipIcons = ["swap_horiz", "wb_sunny", "filter_1", "open_in_full"];
 
@@ -401,8 +430,9 @@ export function GuidedCamera({ position, weightKg, cancel, counter, needsNetwork
               </p>
             )
           }
+          issues={issues}
           action={{
-            label: review ? review.actionLabel : uploading ? "Enviando..." : "Usar foto",
+            label: actionLabel,
             icon: review?.actionIcon ?? "check",
             onClick: usePhoto,
             disabled: blockedOffline || uploading,
@@ -432,13 +462,16 @@ type PhotoReviewProps = {
   url: string;
   question: string;
   info?: ReactNode;
+  // Problemas da checagem de qualidade; `checking` enquanto a medição ainda não voltou.
+  issues?: QualityIssue[];
+  checking?: boolean;
   action: { label: string; icon: string; onClick: () => void; disabled?: boolean };
   onRetake: () => void;
   children?: ReactNode;
 };
 
 // Revisão da foto (design 1d / 2e): a foto em dois terços da tela e a folha branca com as ações.
-export function PhotoReview({ url, question, info, action, onRetake, children }: PhotoReviewProps) {
+export function PhotoReview({ url, question, info, issues = [], checking = false, action, onRetake, children }: PhotoReviewProps) {
   return (
     <section className="absolute inset-0 z-20 bg-camera" data-testid="review">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -457,6 +490,7 @@ export function PhotoReview({ url, question, info, action, onRetake, children }:
       >
         <h2 className="mb-1 text-[22px] font-bold leading-[1.25] tracking-[-0.01em]">{question}</h2>
         {info}
+        {checking ? <QualityChecking /> : <QualityIssues issues={issues} />}
         <button
           type="button"
           data-primary-action

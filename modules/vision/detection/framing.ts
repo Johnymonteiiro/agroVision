@@ -10,10 +10,17 @@ const MIN_SCORE = 0.5;
 const MARGIN = 0.05;
 const MIN_COVERAGE = 0.5;
 
+function cows(detections: FrameDetection[]) {
+  return detections.filter((d) => d.categoryName === "cow" && d.score >= MIN_SCORE);
+}
+
+/** Bovinos na foto: o mesmo filtro do enquadramento (`cow` com score ≥ 0.5). */
+export function countAnimals(detections: FrameDetection[]): number {
+  return cows(detections).length;
+}
+
 export function classifyFraming(detections: FrameDetection[], frameWidth: number, frameHeight: number): Framing {
-  const cow = detections
-    .filter((d) => d.categoryName === "cow" && d.score >= MIN_SCORE)
-    .sort((a, b) => b.score - a.score)[0];
+  const cow = cows(detections).sort((a, b) => b.score - a.score)[0];
   if (!cow) return "NOT_DETECTED";
 
   const { x, y, width, height } = cow.box;
