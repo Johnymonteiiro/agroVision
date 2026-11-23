@@ -5,7 +5,7 @@ Plan: `.specs/features/qualidade-imagem/plan.md`
 
 ## Intent
 
-23 checks in 3 slices · 3 one-way doors · 1 open, of which 0 block (calibração dos limites com fotos reais)
+24 checks in 3 slices · 3 one-way doors · 1 open, of which 0 block (calibração dos limites com fotos reais)
 
 ## Checks
 
@@ -129,6 +129,13 @@ Proof: `pnpm vitest run tests/integration/migrations.test.ts -t "migracao 0003 s
 **C23** - Os testes de upload da F1 em `api-images.test.ts` continuam passando sem mudar asserção: mesmo `imageId` `200`, animal inexistente `404`, arquivo grande `413`, não imagem `415`, falha no banco `500` e armazenamento fora `503` (Surface)
 Proof: `pnpm vitest run tests/integration/api-images.test.ts -t "mesmo imageId|animal inexistente|arquivo grande|nao imagem|falha no banco|armazenamento fora"`
 
+**C24** - Com o quadro da câmera falsa vindo de `cow-side.y4m` e um bovino enquadrado no detector falso, continuam passando sem mudar asserção:
+- os testes da F1 "usar foto envia e conta" e "offline desabilita usar foto";
+- o teste "foto da camera volta para o formulario" do cadastro, que usa o detector real.
+
+(Supersedes, adicionado no build)
+Proof: `pnpm playwright test tests/e2e/camera.spec.ts tests/e2e/cadastro.spec.ts -g "usar foto envia e conta|offline desabilita usar foto|foto da camera volta para o formulario"`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -191,3 +198,10 @@ Arquivos tocados (`wc -c`, existentes) mais uma estimativa dos novos:
 Total ≈ 102 KB ÷ 4 ≈ 26k.
 
 - S1-S3 = 26k, under the 150k budget - one builder
+
+- **Boundary:** código e testes escritos (feature base `6afd910`). `pnpm typecheck` e `pnpm lint` limpos, incluindo as fronteiras de módulo. A `0003` gerada pelo drizzle-kit só tem três `ADD COLUMN` anuláveis. **Nenhuma prova rodada**: o usuário não autorizou testes nesta feature, e por isso o Verifier também não foi despachado
+- **Settled mid-build:**
+  - a câmera falsa do Playwright passou a usar `cow-side.y4m`;
+  - os dois testes da F1 que fotografavam sem bovino ganharam um bovino no setup (Supersedes do plano, C24).
+- **Abandoned:**
+  - reduzir a foto com `drawImage` do canvas: trocado pela média de blocos em JavaScript, para a métrica não depender do navegador (door 2, ajustada antes da aprovação)

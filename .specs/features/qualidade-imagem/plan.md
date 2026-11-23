@@ -132,6 +132,8 @@ A curadoria filtra depois, pelos números.
 | --- | --- | --- |
 | `camera.spec.ts` "enquadramento gravado em cada foto" (F1) | "Usar foto" também com `NOT_DETECTED` | AC 11: sem bovino, o botão diz "Usar mesmo assim"; o enquadramento gravado não muda |
 | `fakeDetector` de `tests/e2e/helpers.ts` (usado pela F4b) | detector falso que nunca vê bovino | passa a ver um bovino enquadrado, com `detect` e `detectImage`. Os checks da F4b ("Analisar imagem") seguem valendo com um bovino na foto |
+| `camera.spec.ts` "usar foto envia e conta" e "offline desabilita usar foto" (F1) | tiravam foto com o detector falso sem detecção e esperavam "Usar foto" | o setup põe um bovino enquadrado antes do disparo (`setBox`); as asserções não mudam (achado no build, C24) |
+| câmera falsa do Playwright (`playwright.config.ts`) | padrão sintético do Chromium como quadro da câmera | a foto de referência `cow-side.y4m` (já gerada pelo `global-setup`), para a medição ver uma foto real; o `detector.spec.ts` já usava esse quadro (achado no build, C24) |
 
 ## Out of scope
 
