@@ -23,10 +23,12 @@ Proof: `pnpm vitest run --project unit --project integration`
 Proof: `pnpm playwright test`
 
 **C2** - Em `git diff d647485 -- tests`, fora dos dois arquivos novos (`tests/unit/module-boundaries.test.ts` e `tests/setup/server-only.ts`), toda linha adicionada ou removida é uma linha de import (AC 2)
-Proof: `git diff d647485 -- tests ":(exclude)tests/unit/module-boundaries.test.ts" ":(exclude)tests/setup/server-only.ts" | grep -E "^[+-][^+-]" | grep -vE "^[+-]\s*(import |\} from |export \{ .* \} from )" | (! grep .)`
+Proof: `git diff d647485 -- tests ":(exclude)tests/unit/module-boundaries.test.ts" ":(exclude)tests/setup/server-only.ts" | grep -E "^[+-][^+-]" | grep -vE "^[+-]\s*(import |\} from |export \{ .* \} from )|import\(\"" | (! grep .)` (regex corrigido no build: a versão aprovada não reconhecia `await import("…")` como linha de import; o claim não mudou)
+Done: yes
 
 **C3** - `pnpm drizzle-kit generate` imprime "No schema changes", e `git status --porcelain drizzle` continua vazio (AC 3)
 Proof: `pnpm drizzle-kit generate 2>&1 | grep -q "No schema changes" && test -z "$(git status --porcelain drizzle)"`
+Done: yes
 
 **C4** - `pnpm build` termina com exit 0. Um componente client que importasse um arquivo com `server-only` faria o build falhar (AC 4, door 3)
 Proof: `pnpm build`
@@ -93,6 +95,7 @@ Proof: `pnpm vitest run tests/unit/module-boundaries.test.ts -t "sem imports ant
 
 **C14** - `pnpm lint` na árvore real termina com exit 0 e nenhum aviso ou erro de `no-restricted-imports`: nenhum arquivo movido viola a door 2 (AC 9, AC 10)
 Proof: `pnpm lint`
+Done: yes
 
 ## Coverage
 
@@ -152,3 +155,12 @@ Tamanho: `lib/` + `components/` + os componentes de `app/` + os imports de `test
 ≈ 78k.
 
 - S1-S2 = 78k, under the 150k budget - one builder
+
+- **Boundary:** código em `febfdf9` (feature base `d647485`, specs em `6a5143c`). Rodados no build: C2 (diff dos testes só com imports), C3 ("No schema changes, nothing to migrate"), C14 (`pnpm lint` exit 0), além de `pnpm typecheck` limpo e de um smoke manual no `pnpm dev` (`/`, `/dataset`, `/animais`, `/dataset/novo`, `/dataset/categorias/nova`, `/analisar`, `/historico`, `/ajustes` e `/app.webmanifest` com 200; `POST /api/categories` inválido com 422). **Não rodados**: C1, C4 e C5-C13 (Vitest, Playwright e `next build`). O usuário não autorizou rodar testes nesta feature, e por isso o Verifier também não foi despachado
+- **Settled mid-build:**
+  - a mudança saiu num script só (`git mv` mais reescrita de imports), e não em um commit por módulo: os imports se cruzam, então commits intermediários não compilariam. Ficaram três commits de código (mudança, lint, teste);
+  - o regex da prova de C2 passou a aceitar `await import("…")` como linha de import; o claim não mudou;
+  - sondagem do ESLint via stdin (não é teste): `modules/vision` importando `@/modules/animals/...` e `../../animals/...` acusa `no-restricted-imports`, e `modules/photos` → `animals` não acusa
+- **Abandoned:**
+  - deixar o script juntar imports multilinha que não mudavam: o `api-images.test.ts` voltou ao formato original, para o diff dos testes mostrar só caminhos;
+  - em `evaluation-flow.tsx`, a linha que passou de 110 caracteres voltou a ser multilinha
