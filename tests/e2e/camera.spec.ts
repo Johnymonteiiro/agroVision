@@ -177,7 +177,8 @@ test("disparo em todos os estados envia o estado do instante", async ({ page }) 
     await expect(page.getByTestId("framing-status")).toHaveAttribute("data-framing", state);
     await expect(page.getByTestId("shutter")).toBeEnabled();
     await page.getByTestId("shutter").click();
-    await page.getByRole("button", { name: "Usar foto" }).click();
+    // qualidade-imagem C20: sem bovino a revisão avisa e o botão vira "Usar mesmo assim".
+    await page.getByRole("button", { name: state === "NOT_DETECTED" ? "Usar mesmo assim" : "Usar foto" }).click();
     await expect(page.getByTestId("review")).toHaveCount(0);
   }
 
@@ -236,6 +237,9 @@ test("usar foto envia e conta", async ({ page }) => {
   });
   await fakeDetector(page);
   await openCamera(page);
+  // qualidade-imagem C24: com um bovino na foto, a revisão não avisa e o botão é "Usar foto".
+  await setBox(page, [...BOXES.FRAMED]);
+  await expect(page.getByTestId("framing-status")).toHaveAttribute("data-framing", "FRAMED");
   for (let i = 1; i <= 2; i++) {
     await page.getByTestId("shutter").click();
     const response = page.waitForResponse((r) => r.url().endsWith(`/api/animals/${animalId}/images`));
@@ -268,6 +272,9 @@ test("permissao negada", async ({ page }) => {
 test("offline desabilita usar foto", async ({ page, context }) => {
   await fakeDetector(page);
   await openCamera(page);
+  // qualidade-imagem C24: com um bovino na foto, a revisão não avisa e o botão é "Usar foto".
+  await setBox(page, [...BOXES.FRAMED]);
+  await expect(page.getByTestId("framing-status")).toHaveAttribute("data-framing", "FRAMED");
   await page.getByTestId("shutter").click();
   await context.setOffline(true);
   await expect(page.getByRole("button", { name: "Usar foto" })).toBeDisabled();
